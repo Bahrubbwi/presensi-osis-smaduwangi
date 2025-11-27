@@ -13,25 +13,17 @@
         .hidden { display: none !important; }
         #preview-container { display: none; text-align: center; margin-top: 10px; }
         #preview-image { max-width: 100%; border-radius: 10px; border: 2px solid #ddd; }
-        
-        /* STYLE GPS & REFRESH */
         .gps-container { display: flex; gap: 5px; align-items: center; margin-bottom: 15px; }
         .status-box { flex-grow: 1; padding: 10px; border-radius: 8px; font-size: 0.9em; text-align: center; margin-bottom: 0 !important; }
         .btn-refresh-gps { height: 42px; width: 50px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
         .status-ok { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
         .status-error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
         
-        /* STYLE TANDA TANGAN */
-        canvas#signature-pad { border: 2px dashed #ccc; border-radius: 10px; width: 100%; height: 150px; background-color: #fff; cursor: crosshair; touch-action: none; }
-
-        /* STYLE POPUP FOTO (MODAL FULLSCREEN) */
+        /* STYLE POPUP FOTO */
         #modalFoto { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; }
         #imgFull { max-width: 95%; max-height: 80%; border-radius: 5px; box-shadow: 0 0 20px white; object-fit: contain; }
         .btn-close-modal { position: absolute; top: 20px; right: 20px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: none; border: none; z-index: 10000; }
         .btn-download-img { margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; border-radius: 5px; text-decoration: none; }
-
-        /* STYLE CREDIT FOOTER */
-        .footer-credit { margin-top: 20px; font-size: 0.75rem; color: #6c757d; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }
 
         .table-responsive { max-height: 400px; font-size: 0.85rem; }
         @media print {
@@ -63,10 +55,6 @@
                     <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2">MASUK</button>
                     <div id="loginLoading" class="text-center mt-3 small text-primary hidden">Sedang memeriksa akun...</div>
                 </form>
-                
-                <div class="footer-credit">
-                    Developed by <b>Tim IT OSIS SMADUWANGI</b> &copy; 2025
-                </div>
             </div>
 
             <div id="presensi-page" class="card p-4 hidden">
@@ -93,19 +81,9 @@
                     
                     <div class="mb-3"><label class="fw-bold">Upload Selfie</label><input type="file" class="form-control" id="fotoInput" accept="image/*" capture="user" required><div id="preview-container"><img id="preview-image" src="#" alt="Preview"></div></div>
                     
-                    <div class="mb-4">
-                        <label class="fw-bold mb-1">Tanda Tangan</label>
-                        <canvas id="signature-pad"></canvas>
-                        <button type="button" class="btn btn-sm btn-secondary mt-1 w-100" onclick="clearSignature()">Hapus TTD</button>
-                    </div>
-
                     <button type="submit" class="btn btn-primary w-100 py-2" id="btnKirim" disabled>Menunggu GPS...</button>
                 </form>
                 <div id="loading" class="text-center mt-3 hidden"><div class="spinner-border text-primary" role="status"></div><p class="small mt-2">Mengirim...</p></div>
-                
-                <div class="footer-credit">
-                    Developed by <b>Tim IT OSIS SMADUWANGI</b> &copy; 2025
-                </div>
             </div>
 
             <div id="admin-page" class="card p-3 hidden">
@@ -137,10 +115,6 @@
                     <table class="table table-striped table-hover mb-0"><thead class="table-dark"><tr><th>Waktu</th><th>Nama</th><th>Kegiatan</th><th class="no-print">Foto</th></tr></thead><tbody id="tabelLaporan"><tr><td colspan="4" class="text-center p-3">Memuat...</td></tr></tbody></table>
                 </div>
                 <div class="mt-5 text-end d-none d-print-block"><p>Mengetahui,<br>Pembina OSIS</p><br><br><br><p>_______________________</p></div>
-                
-                <div class="footer-credit no-print">
-                    Developed by <b>Tim IT OSIS SMADUWANGI</b> &copy; 2025
-                </div>
             </div>
 
         </div>
@@ -156,7 +130,7 @@
     // ==========================================
     // --- KONFIGURASI (WAJIB DIISI ULANG) ---
     // ==========================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXxARx4uP9z0xhbBPf6dHSDrAZuWPh4z3lOW-hQbT8pUHcY0i71bHgqZ1tDXqhMPDh/exec'; 
+    const SCRIPT_URL = 'GANTI_DENGAN_URL_DEPLOYMENT_SCRIPT_ANDA'; 
     
     const LAT_SEKOLAH = -8.481473507725331;   
     const LNG_SEKOLAH = 114.33357576924877;  
@@ -165,21 +139,6 @@
     
     let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan;
     let watchId = null;
-    
-    // TANDA TANGAN & CANVAS
-    let canvas = document.getElementById('signature-pad');
-    let ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    function resizeCanvas() { let r = Math.max(window.devicePixelRatio || 1, 1); canvas.width = canvas.offsetWidth * r; canvas.height = canvas.offsetHeight * r; ctx.scale(r, r); }
-    window.onresize = resizeCanvas; setTimeout(resizeCanvas, 1000);
-    function startDraw(e) { isDrawing=true; ctx.beginPath(); ctx.moveTo(getP(e).x, getP(e).y); }
-    function draw(e) { if(!isDrawing) return; e.preventDefault(); ctx.lineTo(getP(e).x, getP(e).y); ctx.stroke(); }
-    function endDraw() { isDrawing=false; }
-    function getP(e) { let r = canvas.getBoundingClientRect(); let x = e.touches?e.touches[0].clientX:e.clientX; let y = e.touches?e.touches[0].clientY:e.clientY; return { x: x - r.left, y: y - r.top }; }
-    canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', endDraw);
-    canvas.addEventListener('touchstart', startDraw); canvas.addEventListener('touchmove', draw); canvas.addEventListener('touchend', endDraw);
-    function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.beginPath(); }
-    function isCanvasBlank() { const b = document.createElement('canvas'); b.width = canvas.width; b.height = canvas.height; return canvas.toDataURL() === b.toDataURL(); }
 
     if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'));
 
@@ -189,19 +148,15 @@
         document.getElementById('linkDownload').href = url;
         document.getElementById('modalFoto').style.display = "flex";
 
-        // Ambil ID File
         let fileId = "";
         let match1 = url.match(/\/d\/(.+?)(\/|$)/);
         let match2 = url.match(/id=(.+?)($|&)/);
         if (match1) fileId = match1[1]; else if (match2) fileId = match2[1];
 
         if (fileId) {
-            // Gunakan Link LH3 (Google User Content) yg lebih stabil & cepat
             let directLink = "https://lh3.googleusercontent.com/d/" + fileId;
             document.getElementById('imgFull').src = directLink;
-        } else {
-            document.getElementById('imgFull').src = url;
-        }
+        } else { document.getElementById('imgFull').src = url; }
     }
     function tutupFoto() { document.getElementById('modalFoto').style.display = "none"; document.getElementById('imgFull').src = ""; }
 
@@ -225,7 +180,7 @@
     }
     function mulaiSistemPresensi() {
         setInterval(() => { const n=new Date(); document.getElementById('tanggal').value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; document.getElementById('jam').value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; }, 1000);
-        startWatchGPS(); loadKegiatanDropdown(); setTimeout(resizeCanvas, 1000);
+        startWatchGPS(); loadKegiatanDropdown(); 
     }
 
     // --- ADMIN FUNCTIONS ---
@@ -247,7 +202,6 @@
                     html += `<tr><td><b>${tglStr}</b><br><small>${row[2]}</small></td><td>${row[3]}<br><span class="badge bg-secondary badge-ket">${row[4]}</span></td><td>${row[5]}</td>
                     <td class="no-print">
                         <button onclick="bukaFoto('${row[8]}')" class="btn btn-sm btn-primary mb-1"><i class="fas fa-camera"></i></button> 
-                        ${row[9] ? `<button onclick="bukaFoto('${row[9]}')" class="btn btn-sm btn-info text-white mb-1"><i class="fas fa-signature"></i></button>` : ''}
                     </td></tr>`;
                 });
                 tbody.innerHTML = html;
@@ -255,7 +209,7 @@
         });
     }
     function resetFilter() { document.getElementById('filterTanggalAdmin').value = ''; loadLaporan(); }
-    function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getLaporan', mode: 'semua' }) }).then(res => res.json()).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8], "TTD": row[9] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
+    function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getLaporan', mode: 'semua' }) }).then(res => res.json()).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
 
     // --- IMPORT & ANGGOTA ---
     function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) { alert("Salah format!"); input.value = ''; return; } const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3]||'Anggota']); }); if(dataClean.length===0){alert("Kosong!");return;} if(!confirm(`Import ${dataClean.length} data?`)) return; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'importAnggota',dataImport:dataClean})}).then(r=>r.json()).then(d=>{if(d.result==='success'){alert(`✅ Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
@@ -278,37 +232,22 @@
                 i.onload = function() {
                     let c = document.createElement('canvas');
                     let x = c.getContext('2d');
-                    
-                    // Resize (Max 1000px)
                     let w = i.width, h = i.height, mw = 1000;
                     if (w > mw) { h *= mw / w; w = mw; }
                     c.width = w; c.height = h;
-                    
                     x.drawImage(i, 0, 0, w, h);
-                    
-                    // Watermark Bar
-                    let barHeight = h * 0.15;
-                    if(barHeight < 60) barHeight = 60;
-                    x.fillStyle = "rgba(0,0,0,0.6)";
-                    x.fillRect(0, h - barHeight, w, barHeight);
-                    
-                    // Watermark Text
-                    let fontSize = w * 0.04;
-                    if(fontSize < 14) fontSize = 14;
-                    x.fillStyle = "white";
-                    x.font = "bold " + fontSize + "px Arial";
-                    
+                    let barHeight = h * 0.15; if(barHeight < 60) barHeight = 60;
+                    x.fillStyle = "rgba(0,0,0,0.6)"; x.fillRect(0, h - barHeight, w, barHeight);
+                    let fontSize = w * 0.04; if(fontSize < 14) fontSize = 14;
+                    x.fillStyle = "white"; x.font = "bold " + fontSize + "px Arial";
                     let namaSiswa = document.getElementById('nama').value || "Siswa";
                     let waktu = new Date().toLocaleString('id-ID');
                     let lokasi = (userLat && userLng) ? `Lat: ${userLat.toFixed(5)}, Lng: ${userLng.toFixed(5)}` : "Mencari Lokasi...";
-                    
                     let textX = 15;
                     let line1Y = h - barHeight + (barHeight/3);
                     let line2Y = h - barHeight + (barHeight/1.2);
-                    
                     x.fillText(namaSiswa + " | " + waktu, textX, line1Y);
                     x.fillText(lokasi, textX, line2Y);
-
                     document.getElementById('preview-image').src = c.toDataURL('image/jpeg', 0.8);
                     document.getElementById('preview-container').style.display = 'block';
                     base64Foto = c.toDataURL('image/jpeg', 0.8).split(',')[1];
@@ -319,15 +258,13 @@
         }
     });
     
-    // SUBMIT ABSEN
+    // SUBMIT ABSEN (TANPA TTD)
     document.getElementById('presensiForm').addEventListener('submit',e=>{ 
         e.preventDefault(); 
         if(!base64Foto) return alert("Foto Wajib!");
-        if(isCanvasBlank()) return alert("Tanda Tangan Wajib!");
         document.getElementById('btnKirim').disabled=true;
         document.getElementById('loading').style.display='block';
-        let ttdData = canvas.toDataURL('image/png').split(',')[1];
-        let d={action:'absen',tanggal:document.getElementById('tanggal').value,jam:document.getElementById('jam').value,nama:document.getElementById('nama').value,jabatan:document.getElementById('jabatan').value,jenisKegiatan:document.getElementById('jenisKegiatan').value,keterangan:document.querySelector('input[name="ket"]:checked').value,lokasi:userLat+", "+userLng,fotoBase64:base64Foto,fotoMimeType:'image/jpeg',ttdBase64:ttdData};
+        let d={action:'absen',tanggal:document.getElementById('tanggal').value,jam:document.getElementById('jam').value,nama:document.getElementById('nama').value,jabatan:document.getElementById('jabatan').value,jenisKegiatan:document.getElementById('jenisKegiatan').value,keterangan:document.querySelector('input[name="ket"]:checked').value,lokasi:userLat+", "+userLng,fotoBase64:base64Foto,fotoMimeType:'image/jpeg'};
         fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(d)}).then(r=>r.json()).then(x=>{if(x.result==='success'){alert("Sukses!");window.location.reload();}else alert(x.error);document.getElementById('btnKirim').disabled=false;});
     });
 </script>
