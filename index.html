@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Presensi OSIS</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
     
@@ -29,6 +29,8 @@
         .btn-download-img { margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; border-radius: 5px; text-decoration: none; }
 
         .table-responsive { max-height: 400px; font-size: 0.85rem; }
+        
+        /* PRINT MODE */
         @media print {
             body { background-color: white; } .no-print { display: none !important; } #login-page, #presensi-page { display: none !important; }
             #admin-page { display: block !important; position: absolute; top: 0; left: 0; width: 100%; border: none; }
@@ -94,9 +96,9 @@
                 
                 <div class="d-flex justify-content-between align-items-center mb-3 no-print">
                     <h5 class="mb-0 text-primary">🛡️ Admin</h5>
-                    <div>
-                        <button onclick="downloadLaporan()" class="btn btn-sm btn-success me-1"><i class="fas fa-file-excel"></i> Export</button>
-                        <button onclick="window.print()" class="btn btn-sm btn-warning me-1"><i class="fas fa-print"></i> Cetak</button>
+                    <div class="d-flex gap-1">
+                        <button onclick="downloadLaporan()" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Export</button>
+                        <button onclick="window.print()" class="btn btn-sm btn-warning"><i class="fas fa-print"></i> Cetak</button>
                         <button onclick="logout()" class="btn btn-sm btn-outline-danger">Keluar</button>
                     </div>
                 </div>
@@ -115,6 +117,7 @@
                 </div>
 
                 <div id="rekap-kegiatan" class="d-flex gap-2 mb-3 flex-wrap"></div>
+
                 <div class="table-responsive border rounded">
                     <table class="table table-striped table-hover mb-0"><thead class="table-dark"><tr><th>Waktu</th><th>Nama</th><th>Kegiatan</th><th class="no-print">Foto</th></tr></thead><tbody id="tabelLaporan"><tr><td colspan="4" class="text-center p-3">Memuat...</td></tr></tbody></table>
                 </div>
@@ -132,7 +135,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==========================================
-    // --- KONFIGURASI (WAJIB DIISI ULANG) ---
+    // --- KONFIGURASI ---
     // ==========================================
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXxARx4uP9z0xhbBPf6dHSDrAZuWPh4z3lOW-hQbT8pUHcY0i71bHgqZ1tDXqhMPDh/exec'; 
     
@@ -192,7 +195,7 @@
     function tambahKegiatan() { let nama = document.getElementById('inputKegiatanBaru').value; if(!nama) return alert("Isi nama!"); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'tambahKegiatan', namaKegiatan: nama }) }).then(res => res.json()).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
     function hapusKegiatan(nama) { if(!confirm("Hapus?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'hapusKegiatan', namaKegiatan: nama }) }).then(res => res.json()).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
     
-    // 2. FUNGSI LOAD LAPORAN (DIPERBARUI)
+    // --- LOAD LAPORAN (DENGAN REKAP & FIX JAM) ---
     function loadLaporan(mode = '') {
         const tbody = document.getElementById('tabelLaporan');
         const divRekap = document.getElementById('rekap-kegiatan'); 
@@ -223,7 +226,7 @@
                         jamBersih = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace('.', ':');
                     }
 
-                    // HITUNG KEGIATAN
+                    // HITUNG REKAP
                     let keg = row[5]; 
                     if (counts[keg]) { counts[keg]++; } else { counts[keg] = 1; }
 
@@ -273,7 +276,7 @@
     document.getElementById('formAnggota').addEventListener('submit',e=>{ e.preventDefault(); let m=document.getElementById('modeForm').value; let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:document.getElementById('inputPass').value, nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(d)}).then(r=>r.json()).then(x=>{ if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); }); });
     function hapusAnggota(u){ if(confirm("Hapus "+u+"?")) fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'hapusAnggota',username:u})}).then(r=>r.json()).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
     
-    // --- FUNGSI KOMPRES GAMBAR & WATERMARK ---
+    // --- KOMPRES & WATERMARK ---
     document.getElementById('fotoInput').addEventListener('change', function(e) {
         let f = e.target.files[0];
         if (f) {
@@ -309,7 +312,7 @@
         }
     });
     
-    // --- SUBMIT DENGAN SWEETALERT ---
+    // --- KIRIM DENGAN SWEETALERT ---
     document.getElementById('presensiForm').addEventListener('submit', e => { 
         e.preventDefault(); 
         if(!base64Foto) return Swal.fire('Error', 'Foto Wajib Diisi!', 'warning'); 
