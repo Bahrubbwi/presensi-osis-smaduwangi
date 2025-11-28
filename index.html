@@ -22,7 +22,6 @@
         .status-ok { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
         .status-error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
         
-        /* STYLE POPUP FOTO */
         #modalFoto { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; }
         #imgFull { max-width: 95%; max-height: 80%; border-radius: 5px; box-shadow: 0 0 20px white; object-fit: contain; }
         .btn-close-modal { position: absolute; top: 20px; right: 20px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: none; border: none; z-index: 10000; }
@@ -30,7 +29,6 @@
 
         .table-responsive { max-height: 400px; font-size: 0.85rem; }
         
-        /* PRINT MODE */
         @media print {
             body { background-color: white; } .no-print { display: none !important; } #login-page, #presensi-page { display: none !important; }
             #admin-page { display: block !important; position: absolute; top: 0; left: 0; width: 100%; border: none; }
@@ -53,7 +51,11 @@
         <div class="col-md-12 col-lg-6">
             
             <div id="login-page" class="card p-4">
-                <div class="text-center mb-4"><h3>🔐 LOGIN OSIS</h3><p class="text-muted small">SMKN DARUL ULUM MUNCAR</p></div>
+                <div class="text-center mb-4">
+                    <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo" style="height: 80px; margin-bottom: 15px;">
+                    <h4 class="fw-bold mb-1">SMKN DARUL ULUM MUNCAR</h4>
+                    <p class="text-muted">Sistem Presensi OSIS</p>
+                </div>
                 <form id="loginForm">
                     <div class="mb-3"><label>Username</label><input type="text" class="form-control" id="loginUser" required placeholder="User"></div>
                     <div class="mb-3"><label>Password</label><input type="password" class="form-control" id="loginPass" required placeholder="Pass"></div>
@@ -95,10 +97,14 @@
                 <div id="kop-laporan"><h3>LAPORAN HARIAN PRESENSI OSIS</h3><h4>SMKN DARUL ULUM MUNCAR BANYUWANGI</h4><p class="small">Dicetak: <span id="tglCetak"></span></p></div>
                 
                 <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-                    <h5 class="mb-0 text-primary">🛡️ Admin</h5>
+                    <div class="d-flex align-items-center text-primary">
+                        <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo" style="height: 35px; width: auto;" class="me-2">
+                        <h6 class="mb-0 fw-bold">Admin</h6>
+                    </div>
                     <div class="d-flex gap-1">
                         <button onclick="downloadLaporan()" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Export</button>
                         <button onclick="window.print()" class="btn btn-sm btn-warning"><i class="fas fa-print"></i> Cetak</button>
+                        <button onclick="bukaModalHapus()" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Hapus</button>
                         <button onclick="logout()" class="btn btn-sm btn-outline-danger">Keluar</button>
                     </div>
                 </div>
@@ -132,6 +138,38 @@
 <div class="modal fade" id="modalFormAnggota" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="judulFormAnggota">Anggota</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formAnggota"><input type="hidden" id="modeForm"><input type="hidden" id="usernameLama"><div class="mb-2"><label>Username</label><input type="text" class="form-control" id="inputUser" required></div><div class="mb-2"><label>Password</label><input type="text" class="form-control" id="inputPass" required></div><div class="mb-2"><label>Nama</label><input type="text" class="form-control" id="inputNama" required></div><div class="mb-2"><label>Jabatan</label><select class="form-select" id="inputJabatan" required><option value="Ketua">Ketua</option><option value="Wakil">Wakil</option><option value="Sekretaris">Sekretaris</option><option value="Bendahara">Bendahara</option><option value="Anggota">Anggota</option><option value="Pembina">Pembina</option></select></div><button type="submit" class="btn btn-primary w-100 mt-3" id="btnSimpanAnggota">Simpan</button></form></div></div></div></div>
 <div class="modal fade" id="modalKelolaKegiatan" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-secondary text-white"><h5 class="modal-title">Daftar Kegiatan</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="input-group mb-3"><input type="text" class="form-control" id="inputKegiatanBaru" placeholder="Nama Kegiatan Baru"><button class="btn btn-success" onclick="tambahKegiatan()">Tambah</button></div><ul class="list-group" id="listKegiatan"><li class="list-group-item text-center">Memuat...</li></ul></div></div></div></div>
 
+<div class="modal fade" id="modalHapusMassal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Hapus Data & Foto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning small">
+                    <b>Perhatian:</b> Tindakan ini akan menghapus data di Tabel DAN Foto di Google Drive secara permanen.
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Pilih Mode Penghapusan:</label>
+                    <select class="form-select" id="modeHapus" onchange="cekModeHapus()">
+                        <option value="tanggal">Hapus Per Tanggal</option>
+                        <option value="kegiatan">Hapus Per Kegiatan</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="blokHapusTanggal">
+                    <label>Pilih Tanggal:</label>
+                    <input type="date" id="targetHapusTanggal" class="form-control">
+                </div>
+                <div class="mb-3 hidden" id="blokHapusKegiatan">
+                    <label>Pilih Kegiatan:</label>
+                    <select id="targetHapusKegiatan" class="form-select"><option selected disabled>Memuat...</option></select>
+                </div>
+                <button onclick="prosesHapusMassal()" class="btn btn-danger w-100 fw-bold">🔥 EKSEKUSI HAPUS</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==========================================
@@ -144,10 +182,20 @@
     const MAX_JARAK_METER = 800; 
     // ==========================================
     
-    let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan;
+    let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus;
     let watchId = null;
 
     if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'));
+
+    // --- FUNGSI FETCH AMAN (ANDROID FIX) ---
+    async function fetchData(data) {
+        return fetch(SCRIPT_URL, {
+            method: 'POST',
+            redirect: 'follow', // PENTING: Agar Android tidak error 500
+            headers: { "Content-Type": "text/plain;charset=utf-8" }, // PENTING: Agar tidak kena CORS
+            body: JSON.stringify(data)
+        }).then(response => response.json());
+    }
 
     // --- POPUP FOTO LOGIC ---
     function bukaFoto(url) {
@@ -189,50 +237,40 @@
     }
 
     // --- ADMIN FUNCTIONS ---
-    function loadKegiatanDropdown() { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getKegiatan' }) }).then(res => res.json()).then(d => { let html = '<option value="" selected disabled>Pilih Kegiatan...</option>'; if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; }); document.getElementById('jenisKegiatan').innerHTML = html; }); }
+    function loadKegiatanDropdown() { fetchData({ action: 'getKegiatan' }).then(d => { let html = '<option value="" selected disabled>Pilih Kegiatan...</option>'; if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; }); document.getElementById('jenisKegiatan').innerHTML = html; }); }
     function bukaModalKelolaKegiatan() { if(!modalKegiatan) modalKegiatan = new bootstrap.Modal(document.getElementById('modalKelolaKegiatan')); modalKegiatan.show(); loadListKegiatanAdmin(); }
-    function loadListKegiatanAdmin() { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getKegiatan' }) }).then(res => res.json()).then(d => { let html = ''; if(d.result === 'success') d.data.forEach(r => { html += `<li class="list-group-item d-flex justify-content-between align-items-center">${r[0]} <button class="btn btn-sm btn-danger" onclick="hapusKegiatan('${r[0]}')"><i class="fas fa-trash"></i></button></li>`; }); document.getElementById('listKegiatan').innerHTML = html || '<li class="list-group-item text-center">Belum ada kegiatan</li>'; }); }
-    function tambahKegiatan() { let nama = document.getElementById('inputKegiatanBaru').value; if(!nama) return alert("Isi nama!"); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'tambahKegiatan', namaKegiatan: nama }) }).then(res => res.json()).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
-    function hapusKegiatan(nama) { if(!confirm("Hapus?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'hapusKegiatan', namaKegiatan: nama }) }).then(res => res.json()).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
+    function loadListKegiatanAdmin() { fetchData({ action: 'getKegiatan' }).then(d => { let html = ''; if(d.result === 'success') d.data.forEach(r => { html += `<li class="list-group-item d-flex justify-content-between align-items-center">${r[0]} <button class="btn btn-sm btn-danger" onclick="hapusKegiatan('${r[0]}')"><i class="fas fa-trash"></i></button></li>`; }); document.getElementById('listKegiatan').innerHTML = html || '<li class="list-group-item text-center">Belum ada kegiatan</li>'; }); }
+    function tambahKegiatan() { let nama = document.getElementById('inputKegiatanBaru').value; if(!nama) return alert("Isi nama!"); fetchData({ action: 'tambahKegiatan', namaKegiatan: nama }).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
+    function hapusKegiatan(nama) { if(!confirm("Hapus?")) return; fetchData({ action: 'hapusKegiatan', namaKegiatan: nama }).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
     
-    // --- LOAD LAPORAN (VERSI GRID CARD RAPI) ---
+    // --- LOAD LAPORAN (VERSI MINIMALIS) ---
     function loadLaporan(mode = '') {
         const tbody = document.getElementById('tabelLaporan');
         const divRekap = document.getElementById('rekap-kegiatan'); 
         
         tbody.innerHTML = '<tr><td colspan="4" class="text-center p-3">Memuat...</td></tr>';
         divRekap.innerHTML = ''; 
-
-        // STYLE GRID (2 kolom di HP)
         divRekap.className = 'row g-2 mb-3'; 
 
         let payload = { action: 'getLaporan' };
-        
         if (mode === 'filter') { 
             const tgl = document.getElementById('filterTanggalAdmin').value; 
             if (tgl) payload.filterTanggal = tgl; 
             else { Swal.fire('Info', 'Pilih tanggal dulu!', 'info'); return; } 
         }
 
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
-        .then(res => res.json())
-        .then(data => {
+        fetchData(payload).then(data => {
             let html = '';
             let counts = {}; 
-
             if (data.data && data.data.length > 0) {
                 data.data.forEach(row => {
-                    // FIX JAM
                     let jamBersih = row[2];
                     if (String(row[2]).includes('T')) {
                         let dateObj = new Date(row[2]);
                         jamBersih = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace('.', ':');
                     }
-
-                    // HITUNG REKAP
                     let keg = row[5]; 
                     if (counts[keg]) { counts[keg]++; } else { counts[keg] = 1; }
-
                     let tglStr = new Date(row[1]).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
                     
                     html += `<tr>
@@ -242,52 +280,95 @@
                         <td class="no-print"><button onclick="bukaFoto('${row[8]}')" class="btn btn-sm btn-primary mb-1"><i class="fas fa-camera"></i></button></td>
                     </tr>`;
                 });
-                
                 tbody.innerHTML = html;
-
-                // RENDER KARTU REKAP CANTIK
                 let htmlRekap = '';
                 for (const [kegiatan, jumlah] of Object.entries(counts)) {
                     let colors = ['primary', 'success', 'danger', 'warning', 'info', 'dark'];
                     let randColor = colors[Math.floor(Math.random() * colors.length)];
-                    
                     htmlRekap += `
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-${randColor}">
-                            <div class="overflow-hidden me-2">
-                                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Kegiatan</small><br>
-                                <span class="fw-bold text-dark text-truncate d-block" style="font-size: 0.9rem;">${kegiatan}</span>
-                            </div>
-                            <span class="badge bg-${randColor} rounded-pill fs-6">${jumlah}</span>
+                    <div class="col-6 col-sm-4 col-md-3">
+                        <div class="p-2 bg-white rounded shadow-sm d-flex align-items-center justify-content-between border-start border-3 border-${randColor}">
+                            <span class="small fw-bold text-secondary text-truncate me-2" title="${kegiatan}">${kegiatan}</span>
+                            <span class="badge bg-${randColor} bg-opacity-10 text-${randColor} rounded-pill">${jumlah}</span>
                         </div>
                     </div>`;
                 }
                 divRekap.innerHTML = htmlRekap;
-
             } else { 
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center p-3 text-muted">Data Kosong.</td></tr>'; 
-                divRekap.innerHTML = '<div class="col-12 text-center"><span class="badge bg-secondary">Tidak ada data</span></div>';
+                divRekap.innerHTML = '<div class="col-12 text-center"><small class="text-muted fst-italic">Belum ada data presensi.</small></div>';
             }
-        })
-        .catch(err => {
-            console.error(err);
+        }).catch(err => {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Gagal memuat data.</td></tr>';
         });
     }
 
     function resetFilter() { document.getElementById('filterTanggalAdmin').value = ''; loadLaporan(); }
-    function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getLaporan', mode: 'semua' }) }).then(res => res.json()).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
+    function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetchData({ action: 'getLaporan', mode: 'semua' }).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
+
+    // --- HAPUS MASSAL FUNCTIONS ---
+    function bukaModalHapus() {
+        if (!modalHapus) modalHapus = new bootstrap.Modal(document.getElementById('modalHapusMassal'));
+        fetchData({ action: 'getKegiatan' }).then(d => {
+            let html = '<option value="" selected disabled>Pilih Kegiatan...</option>';
+            if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; });
+            document.getElementById('targetHapusKegiatan').innerHTML = html;
+        });
+        modalHapus.show();
+    }
+    function cekModeHapus() {
+        let mode = document.getElementById('modeHapus').value;
+        if (mode === 'tanggal') {
+            document.getElementById('blokHapusTanggal').classList.remove('hidden');
+            document.getElementById('blokHapusKegiatan').classList.add('hidden');
+        } else {
+            document.getElementById('blokHapusTanggal').classList.add('hidden');
+            document.getElementById('blokHapusKegiatan').classList.remove('hidden');
+        }
+    }
+    function prosesHapusMassal() {
+        let mode = document.getElementById('modeHapus').value;
+        let target = '';
+        if (mode === 'tanggal') {
+            target = document.getElementById('targetHapusTanggal').value;
+            if (!target) return Swal.fire('Error', 'Pilih tanggal dulu!', 'warning');
+        } else {
+            target = document.getElementById('targetHapusKegiatan').value;
+            if (!target) return Swal.fire('Error', 'Pilih kegiatan dulu!', 'warning');
+        }
+        Swal.fire({
+            title: 'Anda Yakin?',
+            text: "Data & Foto akan dihapus permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Ya, Hapus!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({title: 'Sedang Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
+                fetchData({ action: 'hapusMassal', mode: mode, target: target }).then(d => {
+                    if (d.result === 'success') {
+                        Swal.fire('Terhapus!', `Berhasil menghapus ${d.jumlah} data.`, 'success');
+                        modalHapus.hide();
+                        loadLaporan();
+                    } else { Swal.fire('Gagal', d.error, 'error'); }
+                });
+            }
+        });
+    }
 
     // --- IMPORT & ANGGOTA ---
-    function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) { alert("Salah format!"); input.value = ''; return; } const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3]||'Anggota']); }); if(dataClean.length===0){alert("Kosong!");return;} if(!confirm(`Import ${dataClean.length} data?`)) return; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'importAnggota',dataImport:dataClean})}).then(r=>r.json()).then(d=>{if(d.result==='success'){alert(`✅ Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
-    document.getElementById('loginForm').addEventListener('submit', e=>{ e.preventDefault(); document.getElementById('btnLogin').disabled=true; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'login',username:document.getElementById('loginUser').value,password:document.getElementById('loginPass').value})}).then(r=>r.json()).then(d=>{ if(d.result==='success'){ localStorage.setItem('osis_nama',d.nama); localStorage.setItem('osis_jabatan',d.jabatan); cekHalamanTujuan(d.nama,d.jabatan); } else alert(d.error); document.getElementById('btnLogin').disabled=false; }); });
+    function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) { alert("Salah format!"); input.value = ''; return; } const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3]||'Anggota']); }); if(dataClean.length===0){alert("Kosong!");return;} if(!confirm(`Import ${dataClean.length} data?`)) return; fetchData({action:'importAnggota',dataImport:dataClean}).then(d=>{if(d.result==='success'){alert(`✅ Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
+    
+    document.getElementById('loginForm').addEventListener('submit', e=>{ e.preventDefault(); document.getElementById('btnLogin').disabled=true; fetchData({action:'login',username:document.getElementById('loginUser').value,password:document.getElementById('loginPass').value}).then(d=>{ if(d.result==='success'){ localStorage.setItem('osis_nama',d.nama); localStorage.setItem('osis_jabatan',d.jabatan); cekHalamanTujuan(d.nama,d.jabatan); } else alert(d.error); document.getElementById('btnLogin').disabled=false; }); });
+    
     function cekHalamanTujuan(n, j) { document.getElementById('login-page').classList.add('hidden'); if(j==='Pembina'){ document.getElementById('admin-page').classList.remove('hidden'); document.getElementById('tglCetak').innerText=new Date().toLocaleDateString(); loadLaporan(); } else { document.getElementById('presensi-page').classList.remove('hidden'); document.getElementById('displayNama').innerText=n; document.getElementById('displayJabatan').innerText=j; document.getElementById('nama').value=n; document.getElementById('jabatan').value=j; mulaiSistemPresensi(); } }
     function logout(){ localStorage.clear(); window.location.reload(); }
     function bukaModalKelolaAnggota(){ if(!modalKelola) modalKelola=new bootstrap.Modal(document.getElementById('modalKelolaAnggota')); modalKelola.show(); loadDaftarAnggota(); }
-    function loadDaftarAnggota(){ document.getElementById('tabelAnggota').innerHTML='<tr><td colspan="3" class="text-center">Memuat...</td></tr>'; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'getAnggota'})}).then(r=>r.json()).then(d=>{ let h=''; d.data.forEach(r=>{ h+=`<tr><td>${r[2]}<br><small class="text-muted">${r[0]}</small></td><td>${r[3]}</td><td><button onclick="bukaFormAnggota('edit','${r[0]}','${r[1]}','${r[2]}','${r[3]}')" class="btn btn-sm btn-warning mb-1"><i class="fas fa-edit"></i></button> <button onclick="hapusAnggota('${r[0]}')" class="btn btn-sm btn-danger mb-1"><i class="fas fa-trash"></i></button></td></tr>`; }); document.getElementById('tabelAnggota').innerHTML=h; }); }
+    function loadDaftarAnggota(){ document.getElementById('tabelAnggota').innerHTML='<tr><td colspan="3" class="text-center">Memuat...</td></tr>'; fetchData({action:'getAnggota'}).then(d=>{ let h=''; d.data.forEach(r=>{ h+=`<tr><td>${r[2]}<br><small class="text-muted">${r[0]}</small></td><td>${r[3]}</td><td><button onclick="bukaFormAnggota('edit','${r[0]}','${r[1]}','${r[2]}','${r[3]}')" class="btn btn-sm btn-warning mb-1"><i class="fas fa-edit"></i></button> <button onclick="hapusAnggota('${r[0]}')" class="btn btn-sm btn-danger mb-1"><i class="fas fa-trash"></i></button></td></tr>`; }); document.getElementById('tabelAnggota').innerHTML=h; }); }
     function bukaFormAnggota(m,u='',p='',n='',j=''){ if(!modalForm) modalForm=new bootstrap.Modal(document.getElementById('modalFormAnggota')); document.getElementById('modeForm').value=m; document.getElementById('judulFormAnggota').innerText=m==='tambah'?'Tambah':'Edit'; document.getElementById('inputUser').value=u; document.getElementById('inputPass').value=p; document.getElementById('inputNama').value=n; document.getElementById('inputJabatan').value=j; document.getElementById('usernameLama').value=u; modalForm.show(); }
-    document.getElementById('formAnggota').addEventListener('submit',e=>{ e.preventDefault(); let m=document.getElementById('modeForm').value; let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:document.getElementById('inputPass').value, nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(d)}).then(r=>r.json()).then(x=>{ if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); }); });
-    function hapusAnggota(u){ if(confirm("Hapus "+u+"?")) fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'hapusAnggota',username:u})}).then(r=>r.json()).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
+    document.getElementById('formAnggota').addEventListener('submit',e=>{ e.preventDefault(); let m=document.getElementById('modeForm').value; let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:document.getElementById('inputPass').value, nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; fetchData(d).then(x=>{ if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); }); });
+    function hapusAnggota(u){ if(confirm("Hapus "+u+"?")) fetchData({action:'hapusAnggota',username:u}).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
     
     // --- KOMPRES & WATERMARK ---
     document.getElementById('fotoInput').addEventListener('change', function(e) {
@@ -325,7 +406,7 @@
         }
     });
     
-    // --- KIRIM DENGAN SWEETALERT ---
+    // --- KIRIM DENGAN SWEETALERT & FETCH AMAN ---
     document.getElementById('presensiForm').addEventListener('submit', e => { 
         e.preventDefault(); 
         if(!base64Foto) return Swal.fire('Error', 'Foto Wajib Diisi!', 'warning'); 
@@ -346,9 +427,7 @@
             fotoMimeType: 'image/jpeg'
         };
         
-        fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(d)})
-        .then(r => r.json())
-        .then(x => {
+        fetchData(d).then(x => {
             document.getElementById('loading').style.display = 'none'; 
             if (x.result === 'success') {
                 Swal.fire({
@@ -356,20 +435,12 @@
                     text: 'Presensi berhasil dikirim.',
                     icon: 'success',
                     confirmButtonText: 'Mantap'
-                }).then((result) => {
-                    window.location.reload();
-                });
+                }).then((result) => { window.location.reload(); });
             } else {
-                Swal.fire({
-                    title: 'Gagal Absen',
-                    text: x.error, 
-                    icon: 'error',
-                    confirmButtonText: 'Coba Lagi'
-                });
+                Swal.fire({ title: 'Gagal Absen', text: x.error, icon: 'error', confirmButtonText: 'Coba Lagi' });
             }
             document.getElementById('btnKirim').disabled = false;
-        })
-        .catch(err => {
+        }).catch(err => {
             document.getElementById('loading').style.display = 'none';
             Swal.fire('Error Jaringan', 'Gagal terhubung ke server.', 'error');
             document.getElementById('btnKirim').disabled = false;
@@ -378,4 +449,3 @@
 </script>
 </body>
 </html>
-
