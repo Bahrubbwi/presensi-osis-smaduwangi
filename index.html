@@ -99,6 +99,7 @@
                     <div class="d-flex gap-1">
                         <button onclick="downloadLaporan()" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Export</button>
                         <button onclick="window.print()" class="btn btn-sm btn-warning"><i class="fas fa-print"></i> Cetak</button>
+                        <button onclick="bukaModalHapus()" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Hapus</button>
                         <button onclick="logout()" class="btn btn-sm btn-outline-danger">Keluar</button>
                     </div>
                 </div>
@@ -132,6 +133,38 @@
 <div class="modal fade" id="modalFormAnggota" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="judulFormAnggota">Anggota</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formAnggota"><input type="hidden" id="modeForm"><input type="hidden" id="usernameLama"><div class="mb-2"><label>Username</label><input type="text" class="form-control" id="inputUser" required></div><div class="mb-2"><label>Password</label><input type="text" class="form-control" id="inputPass" required></div><div class="mb-2"><label>Nama</label><input type="text" class="form-control" id="inputNama" required></div><div class="mb-2"><label>Jabatan</label><select class="form-select" id="inputJabatan" required><option value="Ketua">Ketua</option><option value="Wakil">Wakil</option><option value="Sekretaris">Sekretaris</option><option value="Bendahara">Bendahara</option><option value="Anggota">Anggota</option><option value="Pembina">Pembina</option></select></div><button type="submit" class="btn btn-primary w-100 mt-3" id="btnSimpanAnggota">Simpan</button></form></div></div></div></div>
 <div class="modal fade" id="modalKelolaKegiatan" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-secondary text-white"><h5 class="modal-title">Daftar Kegiatan</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="input-group mb-3"><input type="text" class="form-control" id="inputKegiatanBaru" placeholder="Nama Kegiatan Baru"><button class="btn btn-success" onclick="tambahKegiatan()">Tambah</button></div><ul class="list-group" id="listKegiatan"><li class="list-group-item text-center">Memuat...</li></ul></div></div></div></div>
 
+<div class="modal fade" id="modalHapusMassal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Hapus Data & Foto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning small">
+                    <b>Perhatian:</b> Tindakan ini akan menghapus data di Tabel DAN Foto di Google Drive secara permanen.
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Pilih Mode Penghapusan:</label>
+                    <select class="form-select" id="modeHapus" onchange="cekModeHapus()">
+                        <option value="tanggal">Hapus Per Tanggal</option>
+                        <option value="kegiatan">Hapus Per Kegiatan</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="blokHapusTanggal">
+                    <label>Pilih Tanggal:</label>
+                    <input type="date" id="targetHapusTanggal" class="form-control">
+                </div>
+                <div class="mb-3 hidden" id="blokHapusKegiatan">
+                    <label>Pilih Kegiatan:</label>
+                    <select id="targetHapusKegiatan" class="form-select"><option selected disabled>Memuat...</option></select>
+                </div>
+                <button onclick="prosesHapusMassal()" class="btn btn-danger w-100 fw-bold">🔥 EKSEKUSI HAPUS</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==========================================
@@ -144,7 +177,7 @@
     const MAX_JARAK_METER = 800; 
     // ==========================================
     
-    let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan;
+    let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus;
     let watchId = null;
 
     if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'));
@@ -203,7 +236,6 @@
         tbody.innerHTML = '<tr><td colspan="4" class="text-center p-3">Memuat...</td></tr>';
         divRekap.innerHTML = ''; 
 
-        // UBAH STYLE WADAH: Jarak antar kotak lebih rapat (g-2)
         divRekap.className = 'row g-2 mb-3'; 
 
         let payload = { action: 'getLaporan' };
@@ -222,14 +254,12 @@
 
             if (data.data && data.data.length > 0) {
                 data.data.forEach(row => {
-                    // FIX JAM
                     let jamBersih = row[2];
                     if (String(row[2]).includes('T')) {
                         let dateObj = new Date(row[2]);
                         jamBersih = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace('.', ':');
                     }
 
-                    // HITUNG REKAP
                     let keg = row[5]; 
                     if (counts[keg]) { counts[keg]++; } else { counts[keg] = 1; }
 
@@ -245,13 +275,10 @@
                 
                 tbody.innerHTML = html;
 
-                // --- BAGIAN REKAP MINIMALIS ---
                 let htmlRekap = '';
                 for (const [kegiatan, jumlah] of Object.entries(counts)) {
                     let colors = ['primary', 'success', 'danger', 'warning', 'info', 'dark'];
                     let randColor = colors[Math.floor(Math.random() * colors.length)];
-                    
-                    // DESAIN BARU: Simpel, Putih, Border Kiri Warna
                     htmlRekap += `
                     <div class="col-6 col-sm-4 col-md-3">
                         <div class="p-2 bg-white rounded shadow-sm d-flex align-items-center justify-content-between border-start border-3 border-${randColor}">
@@ -275,6 +302,65 @@
 
     function resetFilter() { document.getElementById('filterTanggalAdmin').value = ''; loadLaporan(); }
     function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getLaporan', mode: 'semua' }) }).then(res => res.json()).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
+
+    // --- HAPUS MASSAL FUNCTIONS ---
+    function bukaModalHapus() {
+        if (!modalHapus) modalHapus = new bootstrap.Modal(document.getElementById('modalHapusMassal'));
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getKegiatan' }) })
+        .then(res => res.json())
+        .then(d => {
+            let html = '<option value="" selected disabled>Pilih Kegiatan...</option>';
+            if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; });
+            document.getElementById('targetHapusKegiatan').innerHTML = html;
+        });
+        modalHapus.show();
+    }
+    function cekModeHapus() {
+        let mode = document.getElementById('modeHapus').value;
+        if (mode === 'tanggal') {
+            document.getElementById('blokHapusTanggal').classList.remove('hidden');
+            document.getElementById('blokHapusKegiatan').classList.add('hidden');
+        } else {
+            document.getElementById('blokHapusTanggal').classList.add('hidden');
+            document.getElementById('blokHapusKegiatan').classList.remove('hidden');
+        }
+    }
+    function prosesHapusMassal() {
+        let mode = document.getElementById('modeHapus').value;
+        let target = '';
+        let pesanKonfirmasi = '';
+        if (mode === 'tanggal') {
+            target = document.getElementById('targetHapusTanggal').value;
+            if (!target) return Swal.fire('Error', 'Pilih tanggal dulu!', 'warning');
+            pesanKonfirmasi = `Yakin menghapus SEMUA data pada tanggal ${target}?`;
+        } else {
+            target = document.getElementById('targetHapusKegiatan').value;
+            if (!target) return Swal.fire('Error', 'Pilih kegiatan dulu!', 'warning');
+            pesanKonfirmasi = `Yakin menghapus SEMUA data kegiatan "${target}"?`;
+        }
+        Swal.fire({
+            title: 'Anda Yakin?',
+            text: pesanKonfirmasi + " Foto di Drive juga akan dihapus!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({title: 'Sedang Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'hapusMassal', mode: mode, target: target }) })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.result === 'success') {
+                        Swal.fire('Terhapus!', `Berhasil menghapus ${d.jumlah} data.`, 'success');
+                        modalHapus.hide();
+                        loadLaporan();
+                    } else { Swal.fire('Gagal', d.error, 'error'); }
+                });
+            }
+        });
+    }
 
     // --- IMPORT & ANGGOTA ---
     function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) { alert("Salah format!"); input.value = ''; return; } const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3]||'Anggota']); }); if(dataClean.length===0){alert("Kosong!");return;} if(!confirm(`Import ${dataClean.length} data?`)) return; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'importAnggota',dataImport:dataClean})}).then(r=>r.json()).then(d=>{if(d.result==='success'){alert(`✅ Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
