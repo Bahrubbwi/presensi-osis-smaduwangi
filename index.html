@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Presensi OSIS</title>
-    `
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -30,6 +30,9 @@
 
         .table-responsive { max-height: 400px; font-size: 0.85rem; }
         
+        /* ANIMASI SPLASH SCREEN */
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
         /* PRINT MODE */
         @media print {
             body { background-color: white; } .no-print { display: none !important; } #login-page, #presensi-page { display: none !important; }
@@ -41,6 +44,12 @@
     </style>
 </head>
 <body>
+
+<div id="splash-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s;">
+    <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo" style="width: 120px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
+    <h5 class="text-primary fw-bold">SMK DARUL ULUM</h5>
+    <small class="text-muted">Sistem Presensi OSIS</small>
+</div>
 
 <div id="modalFoto">
     <button class="btn-close-modal" onclick="tutupFoto()">×</button>
@@ -96,7 +105,7 @@
                 
                 <div class="d-flex justify-content-between align-items-center mb-3 no-print">
                     <div class="d-flex align-items-center text-primary">
-                        <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo Sekolah" style="height: 35px; width: auto;" class="me-2">
+                        <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo" style="height: 35px; width: auto;" class="me-2">
                         <h6 class="mb-0 fw-bold">Admin</h6>
                     </div>
                     <div class="d-flex gap-1">
@@ -183,7 +192,20 @@
     let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus;
     let watchId = null;
 
+    // --- SPLASH SCREEN TIMEOUT ---
+    window.addEventListener('load', () => { setTimeout(() => { const s = document.getElementById('splash-screen'); s.style.opacity = '0'; setTimeout(() => { s.style.display = 'none'; }, 500); }, 2000); });
+
     if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'));
+
+    // --- FUNGSI FETCH AMAN (ANDROID FIX) ---
+    async function fetchData(data) {
+        return fetch(SCRIPT_URL, {
+            method: 'POST',
+            redirect: 'follow', // PENTING: Agar Android tidak error 500
+            headers: { "Content-Type": "text/plain;charset=utf-8" }, // PENTING: Agar tidak kena CORS
+            body: JSON.stringify(data)
+        }).then(response => response.json());
+    }
 
     // --- POPUP FOTO LOGIC ---
     function bukaFoto(url) {
@@ -225,36 +247,30 @@
     }
 
     // --- ADMIN FUNCTIONS ---
-    function loadKegiatanDropdown() { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getKegiatan' }) }).then(res => res.json()).then(d => { let html = '<option value="" selected disabled>Pilih Kegiatan...</option>'; if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; }); document.getElementById('jenisKegiatan').innerHTML = html; }); }
+    function loadKegiatanDropdown() { fetchData({ action: 'getKegiatan' }).then(d => { let html = '<option value="" selected disabled>Pilih Kegiatan...</option>'; if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; }); document.getElementById('jenisKegiatan').innerHTML = html; }); }
     function bukaModalKelolaKegiatan() { if(!modalKegiatan) modalKegiatan = new bootstrap.Modal(document.getElementById('modalKelolaKegiatan')); modalKegiatan.show(); loadListKegiatanAdmin(); }
-    function loadListKegiatanAdmin() { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getKegiatan' }) }).then(res => res.json()).then(d => { let html = ''; if(d.result === 'success') d.data.forEach(r => { html += `<li class="list-group-item d-flex justify-content-between align-items-center">${r[0]} <button class="btn btn-sm btn-danger" onclick="hapusKegiatan('${r[0]}')"><i class="fas fa-trash"></i></button></li>`; }); document.getElementById('listKegiatan').innerHTML = html || '<li class="list-group-item text-center">Belum ada kegiatan</li>'; }); }
-    function tambahKegiatan() { let nama = document.getElementById('inputKegiatanBaru').value; if(!nama) return alert("Isi nama!"); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'tambahKegiatan', namaKegiatan: nama }) }).then(res => res.json()).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
-    function hapusKegiatan(nama) { if(!confirm("Hapus?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'hapusKegiatan', namaKegiatan: nama }) }).then(res => res.json()).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
+    function loadListKegiatanAdmin() { fetchData({ action: 'getKegiatan' }).then(d => { let html = ''; if(d.result === 'success') d.data.forEach(r => { html += `<li class="list-group-item d-flex justify-content-between align-items-center">${r[0]} <button class="btn btn-sm btn-danger" onclick="hapusKegiatan('${r[0]}')"><i class="fas fa-trash"></i></button></li>`; }); document.getElementById('listKegiatan').innerHTML = html || '<li class="list-group-item text-center">Belum ada kegiatan</li>'; }); }
+    function tambahKegiatan() { let nama = document.getElementById('inputKegiatanBaru').value; if(!nama) return alert("Isi nama!"); fetchData({ action: 'tambahKegiatan', namaKegiatan: nama }).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
+    function hapusKegiatan(nama) { if(!confirm("Hapus?")) return; fetchData({ action: 'hapusKegiatan', namaKegiatan: nama }).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
     
-    // --- LOAD LAPORAN (VERSI MINIMALIS & ELEGAN) ---
+    // --- LOAD LAPORAN (VERSI MINIMALIS) ---
     function loadLaporan(mode = '') {
         const tbody = document.getElementById('tabelLaporan');
         const divRekap = document.getElementById('rekap-kegiatan'); 
-        
         tbody.innerHTML = '<tr><td colspan="4" class="text-center p-3">Memuat...</td></tr>';
         divRekap.innerHTML = ''; 
-
         divRekap.className = 'row g-2 mb-3'; 
 
         let payload = { action: 'getLaporan' };
-        
         if (mode === 'filter') { 
             const tgl = document.getElementById('filterTanggalAdmin').value; 
             if (tgl) payload.filterTanggal = tgl; 
             else { Swal.fire('Info', 'Pilih tanggal dulu!', 'info'); return; } 
         }
 
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
-        .then(res => res.json())
-        .then(data => {
+        fetchData(payload).then(data => {
             let html = '';
             let counts = {}; 
-
             if (data.data && data.data.length > 0) {
                 data.data.forEach(row => {
                     let jamBersih = row[2];
@@ -262,10 +278,8 @@
                         let dateObj = new Date(row[2]);
                         jamBersih = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}).replace('.', ':');
                     }
-
                     let keg = row[5]; 
                     if (counts[keg]) { counts[keg]++; } else { counts[keg] = 1; }
-
                     let tglStr = new Date(row[1]).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
                     
                     html += `<tr>
@@ -275,9 +289,7 @@
                         <td class="no-print"><button onclick="bukaFoto('${row[8]}')" class="btn btn-sm btn-primary mb-1"><i class="fas fa-camera"></i></button></td>
                     </tr>`;
                 });
-                
                 tbody.innerHTML = html;
-
                 let htmlRekap = '';
                 for (const [kegiatan, jumlah] of Object.entries(counts)) {
                     let colors = ['primary', 'success', 'danger', 'warning', 'info', 'dark'];
@@ -291,27 +303,22 @@
                     </div>`;
                 }
                 divRekap.innerHTML = htmlRekap;
-
             } else { 
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center p-3 text-muted">Data Kosong.</td></tr>'; 
                 divRekap.innerHTML = '<div class="col-12 text-center"><small class="text-muted fst-italic">Belum ada data presensi.</small></div>';
             }
-        })
-        .catch(err => {
-            console.error(err);
+        }).catch(err => {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Gagal memuat data.</td></tr>';
         });
     }
 
     function resetFilter() { document.getElementById('filterTanggalAdmin').value = ''; loadLaporan(); }
-    function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getLaporan', mode: 'semua' }) }).then(res => res.json()).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
+    function downloadLaporan() { if(!confirm("Download SEMUA?")) return; fetchData({ action: 'getLaporan', mode: 'semua' }).then(data => { if(data.result === 'success' && data.data.length > 0) { const dataExcel = data.data.map(row => ({ "Tanggal": new Date(row[1]).toLocaleDateString('id-ID'), "Jam": row[2], "Nama": row[3], "Jabatan": row[4], "Kegiatan": row[5], "Keterangan": row[6], "Lokasi": row[7], "Foto": row[8] })); const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx"); } else { alert("Kosong!"); } }); }
 
     // --- HAPUS MASSAL FUNCTIONS ---
     function bukaModalHapus() {
         if (!modalHapus) modalHapus = new bootstrap.Modal(document.getElementById('modalHapusMassal'));
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getKegiatan' }) })
-        .then(res => res.json())
-        .then(d => {
+        fetchData({ action: 'getKegiatan' }).then(d => {
             let html = '<option value="" selected disabled>Pilih Kegiatan...</option>';
             if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; });
             document.getElementById('targetHapusKegiatan').innerHTML = html;
@@ -331,30 +338,24 @@
     function prosesHapusMassal() {
         let mode = document.getElementById('modeHapus').value;
         let target = '';
-        let pesanKonfirmasi = '';
         if (mode === 'tanggal') {
             target = document.getElementById('targetHapusTanggal').value;
             if (!target) return Swal.fire('Error', 'Pilih tanggal dulu!', 'warning');
-            pesanKonfirmasi = `Yakin menghapus SEMUA data pada tanggal ${target}?`;
         } else {
             target = document.getElementById('targetHapusKegiatan').value;
             if (!target) return Swal.fire('Error', 'Pilih kegiatan dulu!', 'warning');
-            pesanKonfirmasi = `Yakin menghapus SEMUA data kegiatan "${target}"?`;
         }
         Swal.fire({
             title: 'Anda Yakin?',
-            text: pesanKonfirmasi + " Foto di Drive juga akan dihapus!",
+            text: "Data & Foto akan dihapus permanen!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Ya, Hapus!'
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({title: 'Sedang Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'hapusMassal', mode: mode, target: target }) })
-                .then(r => r.json())
-                .then(d => {
+                fetchData({ action: 'hapusMassal', mode: mode, target: target }).then(d => {
                     if (d.result === 'success') {
                         Swal.fire('Terhapus!', `Berhasil menghapus ${d.jumlah} data.`, 'success');
                         modalHapus.hide();
@@ -366,15 +367,17 @@
     }
 
     // --- IMPORT & ANGGOTA ---
-    function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) { alert("Salah format!"); input.value = ''; return; } const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3]||'Anggota']); }); if(dataClean.length===0){alert("Kosong!");return;} if(!confirm(`Import ${dataClean.length} data?`)) return; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'importAnggota',dataImport:dataClean})}).then(r=>r.json()).then(d=>{if(d.result==='success'){alert(`✅ Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
-    document.getElementById('loginForm').addEventListener('submit', e=>{ e.preventDefault(); document.getElementById('btnLogin').disabled=true; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'login',username:document.getElementById('loginUser').value,password:document.getElementById('loginPass').value})}).then(r=>r.json()).then(d=>{ if(d.result==='success'){ localStorage.setItem('osis_nama',d.nama); localStorage.setItem('osis_jabatan',d.jabatan); cekHalamanTujuan(d.nama,d.jabatan); } else alert(d.error); document.getElementById('btnLogin').disabled=false; }); });
+    function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; if(!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) { alert("Salah format!"); input.value = ''; return; } const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3]||'Anggota']); }); if(dataClean.length===0){alert("Kosong!");return;} if(!confirm(`Import ${dataClean.length} data?`)) return; fetchData({action:'importAnggota',dataImport:dataClean}).then(d=>{if(d.result==='success'){alert(`✅ Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
+    
+    document.getElementById('loginForm').addEventListener('submit', e=>{ e.preventDefault(); document.getElementById('btnLogin').disabled=true; fetchData({action:'login',username:document.getElementById('loginUser').value,password:document.getElementById('loginPass').value}).then(d=>{ if(d.result==='success'){ localStorage.setItem('osis_nama',d.nama); localStorage.setItem('osis_jabatan',d.jabatan); cekHalamanTujuan(d.nama,d.jabatan); } else alert(d.error); document.getElementById('btnLogin').disabled=false; }); });
+    
     function cekHalamanTujuan(n, j) { document.getElementById('login-page').classList.add('hidden'); if(j==='Pembina'){ document.getElementById('admin-page').classList.remove('hidden'); document.getElementById('tglCetak').innerText=new Date().toLocaleDateString(); loadLaporan(); } else { document.getElementById('presensi-page').classList.remove('hidden'); document.getElementById('displayNama').innerText=n; document.getElementById('displayJabatan').innerText=j; document.getElementById('nama').value=n; document.getElementById('jabatan').value=j; mulaiSistemPresensi(); } }
     function logout(){ localStorage.clear(); window.location.reload(); }
     function bukaModalKelolaAnggota(){ if(!modalKelola) modalKelola=new bootstrap.Modal(document.getElementById('modalKelolaAnggota')); modalKelola.show(); loadDaftarAnggota(); }
-    function loadDaftarAnggota(){ document.getElementById('tabelAnggota').innerHTML='<tr><td colspan="3" class="text-center">Memuat...</td></tr>'; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'getAnggota'})}).then(r=>r.json()).then(d=>{ let h=''; d.data.forEach(r=>{ h+=`<tr><td>${r[2]}<br><small class="text-muted">${r[0]}</small></td><td>${r[3]}</td><td><button onclick="bukaFormAnggota('edit','${r[0]}','${r[1]}','${r[2]}','${r[3]}')" class="btn btn-sm btn-warning mb-1"><i class="fas fa-edit"></i></button> <button onclick="hapusAnggota('${r[0]}')" class="btn btn-sm btn-danger mb-1"><i class="fas fa-trash"></i></button></td></tr>`; }); document.getElementById('tabelAnggota').innerHTML=h; }); }
+    function loadDaftarAnggota(){ document.getElementById('tabelAnggota').innerHTML='<tr><td colspan="3" class="text-center">Memuat...</td></tr>'; fetchData({action:'getAnggota'}).then(d=>{ let h=''; d.data.forEach(r=>{ h+=`<tr><td>${r[2]}<br><small class="text-muted">${r[0]}</small></td><td>${r[3]}</td><td><button onclick="bukaFormAnggota('edit','${r[0]}','${r[1]}','${r[2]}','${r[3]}')" class="btn btn-sm btn-warning mb-1"><i class="fas fa-edit"></i></button> <button onclick="hapusAnggota('${r[0]}')" class="btn btn-sm btn-danger mb-1"><i class="fas fa-trash"></i></button></td></tr>`; }); document.getElementById('tabelAnggota').innerHTML=h; }); }
     function bukaFormAnggota(m,u='',p='',n='',j=''){ if(!modalForm) modalForm=new bootstrap.Modal(document.getElementById('modalFormAnggota')); document.getElementById('modeForm').value=m; document.getElementById('judulFormAnggota').innerText=m==='tambah'?'Tambah':'Edit'; document.getElementById('inputUser').value=u; document.getElementById('inputPass').value=p; document.getElementById('inputNama').value=n; document.getElementById('inputJabatan').value=j; document.getElementById('usernameLama').value=u; modalForm.show(); }
-    document.getElementById('formAnggota').addEventListener('submit',e=>{ e.preventDefault(); let m=document.getElementById('modeForm').value; let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:document.getElementById('inputPass').value, nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(d)}).then(r=>r.json()).then(x=>{ if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); }); });
-    function hapusAnggota(u){ if(confirm("Hapus "+u+"?")) fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'hapusAnggota',username:u})}).then(r=>r.json()).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
+    document.getElementById('formAnggota').addEventListener('submit',e=>{ e.preventDefault(); let m=document.getElementById('modeForm').value; let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:document.getElementById('inputPass').value, nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; fetchData(d).then(x=>{ if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); }); });
+    function hapusAnggota(u){ if(confirm("Hapus "+u+"?")) fetchData({action:'hapusAnggota',username:u}).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
     
     // --- KOMPRES & WATERMARK ---
     document.getElementById('fotoInput').addEventListener('change', function(e) {
@@ -412,7 +415,7 @@
         }
     });
     
-    // --- KIRIM DENGAN SWEETALERT ---
+    // --- KIRIM DENGAN SWEETALERT & FETCH AMAN ---
     document.getElementById('presensiForm').addEventListener('submit', e => { 
         e.preventDefault(); 
         if(!base64Foto) return Swal.fire('Error', 'Foto Wajib Diisi!', 'warning'); 
@@ -433,9 +436,7 @@
             fotoMimeType: 'image/jpeg'
         };
         
-        fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(d)})
-        .then(r => r.json())
-        .then(x => {
+        fetchData(d).then(x => {
             document.getElementById('loading').style.display = 'none'; 
             if (x.result === 'success') {
                 Swal.fire({
@@ -443,20 +444,12 @@
                     text: 'Presensi berhasil dikirim.',
                     icon: 'success',
                     confirmButtonText: 'Mantap'
-                }).then((result) => {
-                    window.location.reload();
-                });
+                }).then((result) => { window.location.reload(); });
             } else {
-                Swal.fire({
-                    title: 'Gagal Absen',
-                    text: x.error, 
-                    icon: 'error',
-                    confirmButtonText: 'Coba Lagi'
-                });
+                Swal.fire({ title: 'Gagal Absen', text: x.error, icon: 'error', confirmButtonText: 'Coba Lagi' });
             }
             document.getElementById('btnKirim').disabled = false;
-        })
-        .catch(err => {
+        }).catch(err => {
             document.getElementById('loading').style.display = 'none';
             Swal.fire('Error Jaringan', 'Gagal terhubung ke server.', 'error');
             document.getElementById('btnKirim').disabled = false;
@@ -465,4 +458,3 @@
 </script>
 </body>
 </html>
-
