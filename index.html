@@ -192,8 +192,14 @@
     let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus;
     let watchId = null;
 
-    // --- SPLASH SCREEN TIMEOUT ---
-    window.addEventListener('load', () => { setTimeout(() => { const s = document.getElementById('splash-screen'); s.style.opacity = '0'; setTimeout(() => { s.style.display = 'none'; }, 500); }, 2000); });
+    // --- SPLASH SCREEN CEPAT (0.5 Detik) ---
+    window.addEventListener('load', () => { 
+        setTimeout(() => { 
+            const s = document.getElementById('splash-screen'); 
+            s.style.opacity = '0'; 
+            setTimeout(() => { s.style.display = 'none'; }, 300); 
+        }, 500); // <-- Angka 500 ini artinya hanya setengah detik (sebelumnya 2000)
+    });
 
     if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'));
 
@@ -458,3 +464,4 @@
 </script>
 </body>
 </html>
+
