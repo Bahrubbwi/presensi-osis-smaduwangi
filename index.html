@@ -30,9 +30,6 @@
 
         .table-responsive { max-height: 400px; font-size: 0.85rem; }
         
-        /* ANIMASI SPLASH SCREEN */
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
         /* PRINT MODE */
         @media print {
             body { background-color: white; } .no-print { display: none !important; } #login-page, #presensi-page { display: none !important; }
@@ -45,12 +42,6 @@
 </head>
 <body>
 
-<div id="splash-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s;">
-    <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo" style="width: 120px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
-    <h5 class="text-primary fw-bold">SMK DARUL ULUM</h5>
-    <small class="text-muted">Sistem Presensi OSIS</small>
-</div>
-
 <div id="modalFoto">
     <button class="btn-close-modal" onclick="tutupFoto()">×</button>
     <img id="imgFull" src="" alt="Foto Bukti">
@@ -62,7 +53,12 @@
         <div class="col-md-12 col-lg-6">
             
             <div id="login-page" class="card p-4">
-                <div class="text-center mb-4"><h3>🔐 LOGIN OSIS</h3><p class="text-muted small">SMKN DARUL ULUM MUNCAR</p></div>
+                <div class="text-center mb-4">
+                    <img src="https://file-service-full-ks3production.dane.net/file/uploaded:image_12.png-15a46d44-b4d7-48c6-ba2b-097557189101" alt="Logo" style="height: 80px; margin-bottom: 15px;">
+                    
+                    <h4 class="fw-bold mb-1">SMKN DARUL ULUM MUNCAR</h4>
+                    <p class="text-muted">Sistem Presensi OSIS</p>
+                </div>
                 <form id="loginForm">
                     <div class="mb-3"><label>Username</label><input type="text" class="form-control" id="loginUser" required placeholder="User"></div>
                     <div class="mb-3"><label>Password</label><input type="password" class="form-control" id="loginPass" required placeholder="Pass"></div>
@@ -191,15 +187,6 @@
     
     let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus;
     let watchId = null;
-
-    // --- SPLASH SCREEN CEPAT (0.5 Detik) ---
-    window.addEventListener('load', () => { 
-        setTimeout(() => { 
-            const s = document.getElementById('splash-screen'); 
-            s.style.opacity = '0'; 
-            setTimeout(() => { s.style.display = 'none'; }, 300); 
-        }, 500); // <-- Angka 500 ini artinya hanya setengah detik (sebelumnya 2000)
-    });
 
     if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'));
 
@@ -464,4 +451,3 @@
 </script>
 </body>
 </html>
-
