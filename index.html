@@ -1,376 +1,233 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Presensi OSIS</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
-    
-    <style>
-        body { background-color: #eef2f7; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        .hidden { display: none !important; }
-
-        /* LOGIN STYLE ELEGAN */
-        .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .login-card { border: none; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; background: white; width: 100%; max-width: 400px; }
-        .login-header { background: linear-gradient(135deg, #0d6efd 0%, #0043a8 100%); padding: 40px 20px; text-align: center; color: white; position: relative; }
-        .login-header::after { content: ''; position: absolute; bottom: -10px; left: 0; width: 100%; height: 20px; background: white; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-        .icon-circle { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; backdrop-filter: blur(5px); animation: pulse-glow 2s infinite; }
-        .btn-gradient { background: linear-gradient(to right, #0d6efd, #0b5ed7); border: none; font-weight: 600; letter-spacing: 1px; padding: 12px; box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3); transition: transform 0.2s; color: white; }
-        .btn-gradient:hover { color: white; transform: translateY(-2px); }
-        @keyframes pulse-glow { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(255, 255, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
-        
-        /* DASHBOARD STYLE */
-        .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: none; }
-        .gps-container { display: flex; gap: 5px; align-items: center; margin-bottom: 15px; }
-        .status-box { flex-grow: 1; padding: 10px; border-radius: 8px; font-size: 0.9em; text-align: center; margin-bottom: 0 !important; }
-        .status-ok { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
-        .status-error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
-        
-        #modalFoto { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; flex-direction: column; }
-        #imgFull { max-width: 95%; max-height: 80%; border-radius: 5px; box-shadow: 0 0 20px white; object-fit: contain; }
-        .btn-close-modal { position: absolute; top: 20px; right: 20px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: none; border: none; z-index: 10000; }
-        .btn-download-img { margin-top: 15px; padding: 10px 20px; background: #28a745; color: white; border-radius: 5px; text-decoration: none; }
-        
-        #preview-container { display: none; text-align: center; margin-top: 10px; }
-        #preview-image { max-width: 100%; border-radius: 10px; border: 2px solid #ddd; }
-        
-        @media print {
-            body { background-color: white; } .no-print { display: none !important; } 
-            #login-page, #presensi-page { display: none !important; }
-            #admin-page { display: block !important; position: absolute; top: 0; left: 0; width: 100%; border: none; }
-            .table-responsive { max-height: none; overflow: visible; } .card { box-shadow: none; border: none; }
-            #kop-laporan { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px; }
-        }
-        #kop-laporan { display: none; }
-    </style>
-</head>
-<body>
-
-<div id="modalFoto">
-    <button class="btn-close-modal" onclick="tutupFoto()">×</button>
-    <img id="imgFull" src="" alt="Foto Bukti">
-    <a id="linkDownload" href="#" target="_blank" class="btn-download-img"><i class="fas fa-external-link-alt"></i> Buka Asli</a>
-</div>
-
-<div class="container">
-    <div class="row justify-content-center">
-        
-        <div id="login-page" class="col-md-5 col-lg-4 login-wrapper">
-            <div class="card login-card">
-                <div class="login-header">
-                    <div class="icon-circle"><i class="fas fa-user-graduate fa-2x"></i></div>
-                    <h4 class="fw-bold mb-0">LOGIN OSIS</h4>
-                    <p class="small opacity-75 mb-0">SMKN DARUL ULUM MUNCAR</p>
-                </div>
-                <div class="card-body p-4 pt-3">
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label class="text-muted small fw-bold ms-1">Username</label>
-                            <div class="input-group"><span class="input-group-text"><i class="fas fa-user"></i></span><input type="text" class="form-control" id="loginUser" required placeholder="Masukkan username"></div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="text-muted small fw-bold ms-1">Password</label>
-                            <div class="input-group"><span class="input-group-text"><i class="fas fa-lock"></i></span><input type="password" class="form-control" id="loginPass" required placeholder="Masukkan password"></div>
-                        </div>
-                        <button type="submit" id="btnLogin" class="btn btn-primary btn-gradient w-100 rounded-pill mb-3">MASUK SEKARANG</button>
-                        <div id="loginLoading" class="text-center small text-primary hidden"><i class="fas fa-circle-notch fa-spin"></i> Memeriksa akun...</div>
-                    </form>
-                </div>
-                <div class="card-footer bg-light text-center border-0 py-3"><small class="text-muted" style="font-size: 0.75rem;">Developed by <b class="text-primary">Tim IT OSIS SMADUWANGI</b> © 2025</small></div>
-            </div>
-        </div>
-
-        <div class="col-md-12 col-lg-6 mt-4"> 
-            
-            <div id="presensi-page" class="card p-4 hidden">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">📍 Form Presensi</h5><button onclick="logout()" class="btn btn-sm btn-outline-danger">Keluar</button>
-                </div>
-                <div class="alert alert-info py-2 small">Halo, <b id="displayNama">User</b>!<br>Jabatan: <span id="displayJabatan">Anggota</span> | Kelas: <span id="displayKelas">-</span></div>
-                <div class="gps-container"><div id="status-info" class="status-box status-error">Memuat GPS...</div><button type="button" onclick="refreshGPS()" class="btn btn-warning btn-refresh-gps"><i class="fas fa-sync-alt"></i></button></div>
-                <form id="presensiForm">
-                    <input type="hidden" id="nama"><input type="hidden" id="jabatan"><input type="hidden" id="kelas">
-                    <div class="row mb-3">
-                        <div class="col-6"><label class="small text-muted">Tanggal</label><input type="date" class="form-control" id="tanggal" readonly></div>
-                        <div class="col-6"><label class="small text-muted">Jam</label><input type="time" class="form-control" id="jam" readonly></div>
-                    </div>
-                    <div class="mb-3"><label>Jenis Kegiatan</label><select class="form-select" id="jenisKegiatan" required><option value="" selected disabled>Memuat...</option></select></div>
-                    <div class="mb-3"><label>Keterangan</label><div class="d-flex gap-3"><div class="form-check"><input class="form-check-input" type="radio" name="ket" value="Hadir" checked><label>Hadir</label></div><div class="form-check"><input class="form-check-input" type="radio" name="ket" value="Izin"><label>Izin</label></div></div></div>
-                    <div class="mb-3"><label class="fw-bold">Upload Selfie</label><input type="file" class="form-control" id="fotoInput" accept="image/*" capture="user" required><div id="preview-container"><img id="preview-image" src="#" alt="Preview"></div></div>
-                    <button type="submit" class="btn btn-primary w-100 py-2" id="btnKirim" disabled>Menunggu GPS...</button>
-                </form>
-                <div id="loading" class="text-center mt-3 hidden"><div class="spinner-border text-primary" role="status"></div><p class="small mt-2">Mengirim...</p></div>
-                <div class="text-center mt-4 text-muted small no-print">Developed by <b class="text-primary">Tim IT OSIS SMADUWANGI</b> © 2025</div>
-            </div>
-
-            <div id="admin-page" class="card p-3 hidden">
-                <div id="kop-laporan"><h3>LAPORAN HARIAN PRESENSI OSIS</h3><h4>SMKN DARUL ULUM MUNCAR BANYUWANGI</h4><p class="small">Dicetak: <span id="tglCetak"></span></p></div>
-                <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-                    <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-user-tie"></i> Admin Panel</h5>
-                    <div class="d-flex gap-1">
-                        <button onclick="bukaModalExport()" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Laporan</button>
-                        <button onclick="bukaModalHapus()" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i> Hapus</button>
-                        <button onclick="logout()" class="btn btn-sm btn-outline-danger">Keluar</button>
-                    </div>
-                </div>
-                <div class="d-flex gap-2 mb-3 no-print">
-                    <button onclick="bukaModalKelolaAnggota()" class="btn btn-sm btn-primary flex-fill"><i class="fas fa-users"></i> Anggota</button>
-                    <button onclick="bukaModalKelolaKegiatan()" class="btn btn-sm btn-secondary flex-fill"><i class="fas fa-list"></i> Kegiatan</button>
-                    <button onclick="loadLaporan()" class="btn btn-sm btn-info flex-fill text-white"><i class="fas fa-sync"></i> Refresh</button>
-                </div>
-                <div class="input-group mb-2 no-print">
-                    <span class="input-group-text bg-white"><i class="fas fa-calendar-alt"></i></span>
-                    <input type="date" id="filterTanggalAdmin" class="form-control">
-                    <button class="btn btn-primary" onclick="loadLaporan('filter')"><i class="fas fa-search"></i> Cari</button>
-                    <button class="btn btn-outline-secondary" onclick="resetFilter()"><i class="fas fa-times"></i></button>
-                </div>
-
-                <div id="rekap-kegiatan"></div>
-
-                <div class="table-responsive border rounded">
-                    <table class="table table-striped table-hover mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>No</th>
-                                <th>Nia</th>
-                                <th>Waktu</th>
-                                <th>Nama</th>
-                                <th>Kelas</th>
-                                <th>Kegiatan</th>
-                                <th class="no-print">Foto</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelLaporan"><tr><td colspan="7" class="text-center p-3">Memuat...</td></tr></tbody>
-                    </table>
-                </div>
-                <div class="mt-5 text-end d-none d-print-block"><p>Mengetahui,<br>Pembina OSIS</p><br><br><br><p>Baru Rokim, S.Kom</p></div>
-                <div class="text-center mt-4 text-muted small no-print">Developed by <b class="text-primary">Tim IT OSIS SMADUWANGI</b> © 2025</div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalExportOptions" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title"><i class="fas fa-print"></i> Menu Laporan</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="fw-bold">Filter Data Berdasarkan:</label>
-                    <select class="form-select" id="jenisFilterExport" onchange="cekOpsiExport()">
-                        <option value="semua">Semua Data</option>
-                        <option value="tanggal">Per Tanggal</option>
-                        <option value="kegiatan">Per Jenis Kegiatan</option>
-                    </select>
-                </div>
-                <div class="mb-3 hidden" id="opsiExportTanggal">
-                    <label>Pilih Tanggal:</label><input type="date" id="inputExportTanggal" class="form-control">
-                </div>
-                <div class="mb-3 hidden" id="opsiExportKegiatan">
-                    <label>Pilih Kegiatan:</label><select id="inputExportKegiatan" class="form-select"><option selected disabled>Memuat...</option></select>
-                </div>
-                <hr>
-                <div class="d-flex gap-2">
-                    <button onclick="eksekusiLaporan('excel')" class="btn btn-success flex-fill"><i class="fas fa-file-excel"></i> Download Excel</button>
-                    <button onclick="eksekusiLaporan('print')" class="btn btn-warning flex-fill"><i class="fas fa-print"></i> Cetak/PDF</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalKelolaAnggota" tabindex="-1"><div class="modal-dialog modal-fullscreen-sm-down"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">Data Anggota</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="d-flex gap-2 mb-3"><button onclick="bukaFormAnggota('tambah')" class="btn btn-light border flex-fill">Manual</button><button onclick="document.getElementById('fileExcel').click()" class="btn btn-success flex-fill">Import Excel</button><input type="file" id="fileExcel" style="display:none" onchange="prosesImportExcel(this)"></div><div class="table-responsive" style="max-height: 50vh;"><table class="table table-sm table-striped"><thead class="table-light"><tr><th>Nama</th><th>Kelas</th><th>Aksi</th></tr></thead><tbody id="tabelAnggota"></tbody></table></div></div></div></div></div>
-<div class="modal fade" id="modalFormAnggota" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="judulFormAnggota">Anggota</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formAnggota"><input type="hidden" id="modeForm"><input type="hidden" id="usernameLama"><div class="mb-2"><label>Username</label><input type="text" class="form-control" id="inputUser" required></div><div class="mb-2"><label>Password</label><input type="text" class="form-control" id="inputPass" required></div><div class="mb-2"><label>Nama</label><input type="text" class="form-control" id="inputNama" required></div><div class="mb-2"><label>Kelas</label><input type="text" class="form-control" id="inputKelas" required placeholder="Contoh: XII RPL 1"></div><div class="mb-2"><label>Jabatan</label><select class="form-select" id="inputJabatan" required><option value="Ketua">Ketua</option><option value="Wakil">Wakil</option><option value="Sekretaris">Sekretaris</option><option value="Bendahara">Bendahara</option><option value="Anggota">Anggota</option><option value="Pembina">Pembina</option></select></div><button type="submit" class="btn btn-primary w-100 mt-3" id="btnSimpanAnggota">Simpan</button></form></div></div></div></div>
-<div class="modal fade" id="modalKelolaKegiatan" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-secondary text-white"><h5 class="modal-title">Daftar Kegiatan</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="input-group mb-3"><input type="text" class="form-control" id="inputKegiatanBaru" placeholder="Nama Kegiatan Baru"><button class="btn btn-success" onclick="tambahKegiatan()">Tambah</button></div><ul class="list-group" id="listKegiatan"></ul></div></div></div></div>
-<div class="modal fade" id="modalHapusMassal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-danger text-white"><h5 class="modal-title">Hapus Data</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-warning small"><b>Perhatian:</b> Data & Foto dihapus permanen.</div><div class="mb-3"><label>Mode:</label><select class="form-select" id="modeHapus" onchange="cekModeHapus()"><option value="tanggal">Per Tanggal</option><option value="kegiatan">Per Kegiatan</option></select></div><div class="mb-3" id="blokHapusTanggal"><input type="date" id="targetHapusTanggal" class="form-control"></div><div class="mb-3 hidden" id="blokHapusKegiatan"><select id="targetHapusKegiatan" class="form-select"><option selected disabled>Memuat...</option></select></div><button onclick="prosesHapusMassal()" class="btn btn-danger w-100 fw-bold">EKSEKUSI HAPUS</button></div></div></div></div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // ============================================
-    // PERHATIAN: PASTIKAN URL WEB APP ANDA DI SINI
-    // ============================================
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXxARx4uP9z0xhbBPf6dHSDrAZuWPh4z3lOW-hQbT8pUHcY0i71bHgqZ1tDXqhMPDh/exec'; // <--- GANTI JIKA URL ANDA BERUBAH!
+    // ============================================
+    // PERHATIAN: PASTIKAN URL WEB APP ANDA DI SINI
+    // ============================================
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXxARx4uP9z0xhbBPf6dHSDrAZuWPh4z3lOW-hQbT8pUHcY0i71bHgqZ1tDXqhMPDh/exec'; // <--- GANTI JIKA URL ANDA BERUBAH!
+    
+    // CONFIG LOKASI SEKOLAH
+    const LAT_SEKOLAH = -8.481473507725331; 
+    const LNG_SEKOLAH = 114.33357576924877; 
+    const MAX_JARAK_METER = 800; 
+
+    // VARIABEL GLOBAL
+    let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus, modalExport;
     
-    // CONFIG LOKASI SEKOLAH
-    const LAT_SEKOLAH = -8.481473507725331; 
-    const LNG_SEKOLAH = 114.33357576924877; 
-    const MAX_JARAK_METER = 800; 
-
-    // VARIABEL GLOBAL
-    let userLat, userLng, jarakMeter, base64Foto, modalKelola, modalForm, modalKegiatan, modalHapus, modalExport;
-
-    // --- FUNGSI UPDATE TANGGAL & JAM (FIX) ---
-    function updateWaktu() {
-        const n = new Date();
-        const tglField = document.getElementById('tanggal');
-        const jamField = document.getElementById('jam');
-        
-        const yyyy = n.getFullYear();
-        const mm = String(n.getMonth() + 1).padStart(2, '0');
-        const dd = String(n.getDate()).padStart(2, '0');
-        
-        const hh = String(n.getHours()).padStart(2, '0');
-        const min = String(n.getMinutes()).padStart(2, '0');
-
-        if(tglField) tglField.value = `${yyyy}-${mm}-${dd}`;
-        if(jamField) jamField.value = `${hh}:${min}`;
-    }
-    // ---------------------------------------------
-    
-    // Panggil fungsi waktu secara langsung dan set interval
-    updateWaktu(); 
-    setInterval(updateWaktu, 1000);
-    
-    if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'), localStorage.getItem('osis_kelas'));
-
-    // FETCH AMAN
-    async function fetchData(data) {
-        return fetch(SCRIPT_URL, { 
-            method: 'POST', 
-            redirect: 'follow', 
-            headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-            body: JSON.stringify(data) 
-        }).then(response => response.json());
+    // --- FUNGSI KEAMANAN: SHA-256 HASHING (ASYNC) ---
+    async function hashSHA256(str) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        // Menggunakan Web Crypto API untuk hashing
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        // Konversi ke heksadesimal
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
     }
 
-    // PHOTO & GPS
-    function bukaFoto(url) { document.getElementById('imgFull').src = "https://i.gifer.com/ZKZg.gif"; document.getElementById('linkDownload').href = url; document.getElementById('modalFoto').style.display = "flex"; let fileId = url.match(/id=(.+?)($|&)/) || url.match(/\/d\/(.+?)(\/|$)/); if (fileId) document.getElementById('imgFull').src = "https://lh3.googleusercontent.com/d/" + fileId[1]; else document.getElementById('imgFull').src = url; }
-    function tutupFoto() { document.getElementById('modalFoto').style.display = "none"; document.getElementById('imgFull').src = ""; }
-    
-    function refreshGPS() {
-        const info = document.getElementById('status-info'); const btn = document.getElementById('btnKirim'); info.innerHTML = '🔄 Mencari ulang...'; info.className = 'status-box status-error'; btn.disabled = true; btn.innerText = 'Menunggu GPS...';
-        if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => { updateLokasi(pos); }, () => { info.innerHTML = '⚠️ Gagal GPS'; }, { enableHighAccuracy: true });
-    }
-    function updateLokasi(pos) {
-        userLat = pos.coords.latitude; userLng = pos.coords.longitude;
-        const R=6371e3, φ1=userLat*Math.PI/180, φ2=LAT_SEKOLAH*Math.PI/180, Δφ=(LAT_SEKOLAH-userLat)*Math.PI/180, Δλ=(LNG_SEKOLAH-userLng)*Math.PI/180;
-        const a=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-        jarakMeter=Math.floor(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
-        const info = document.getElementById('status-info'), btn = document.getElementById('btnKirim');
-        if (jarakMeter <= MAX_JARAK_METER) { info.innerHTML = `✅ Aman: ${jarakMeter}m`; info.className = "status-box status-ok"; btn.disabled = false; btn.innerText = "Kirim Presensi"; btn.classList.remove('btn-secondary'); btn.classList.add('btn-primary'); } 
-        else { info.innerHTML = `❌ Jarak: ${jarakMeter}m`; info.className = "status-box status-error"; btn.disabled = true; btn.innerText = "Jarak Terlalu Jauh"; }
-    }
-    
-    refreshGPS(); 
-    loadKegiatanDropdown(); 
+    // --- FUNGSI UPDATE TANGGAL & JAM (FIX) ---
+    function updateWaktu() {
+        const n = new Date();
+        const tglField = document.getElementById('tanggal');
+        const jamField = document.getElementById('jam');
+        
+        const yyyy = n.getFullYear();
+        const mm = String(n.getMonth() + 1).padStart(2, '0');
+        const dd = String(n.getDate()).padStart(2, '0');
+        
+        const hh = String(n.getHours()).padStart(2, '0');
+        const min = String(n.getMinutes()).padStart(2, '0');
 
-    // ADMIN - LOAD DATA
-    function loadLaporan(mode = '') {
-        const tbody = document.getElementById('tabelLaporan'), divRekap = document.getElementById('rekap-kegiatan'); 
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center p-3">Memuat...</td></tr>'; divRekap.innerHTML = ''; divRekap.className = 'row g-2 mb-3'; 
-        let payload = { action: 'getLaporan' };
-        if (mode === 'filter') { const tgl = document.getElementById('filterTanggalAdmin').value; if (tgl) payload.filterTanggal = tgl; else { Swal.fire('Info', 'Pilih tanggal dulu!', 'info'); return; } }
-        fetchData(payload).then(data => {
-            let html = '', counts = {}; 
-            if (data.data && data.data.length > 0) {
-                data.data.forEach((row, i) => {
-                    let jam = String(row[2]).includes('T') ? new Date(row[2]).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}).replace('.', ':') : row[2];
-                    let keg = row[6]; if (counts[keg]) counts[keg]++; else counts[keg] = 1;
-                    let tgl = new Date(row[1]).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
-                    html += `<tr><td>${i+1}</td><td class="small text-muted">${row[10]||'-'}</td><td><b>${tgl}</b><br><small>${jam}</small></td><td>${row[3]}</td><td>${row[4]}</td><td>${row[6]}<br><small class="text-success">${row[7]}</small></td><td class="no-print"><button onclick="bukaFoto('${row[9]}')" class="btn btn-sm btn-primary"><i class="fas fa-camera"></i></button></td></tr>`;
-                });
-                tbody.innerHTML = html;
-                let hRekap = ''; for (const [k, v] of Object.entries(counts)) { let c = ['primary', 'success', 'danger', 'warning'][Math.floor(Math.random() * 4)]; hRekap += `<div class="col-6 col-sm-4 col-md-3"><div class="p-2 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-${c}"><span class="small fw-bold text-secondary text-truncate me-2">${k}</span><span class="badge bg-${c} rounded-pill">${v}</span></div></div>`; } divRekap.innerHTML = hRekap;
-            } else { tbody.innerHTML = '<tr><td colspan="7" class="text-center p-3 text-muted">Kosong.</td></tr>'; }
+        if(tglField) tglField.value = `${yyyy}-${mm}-${dd}`;
+        if(jamField) jamField.value = `${hh}:${min}`;
+    }
+    // ---------------------------------------------
+    
+    // Panggil fungsi waktu secara langsung dan set interval
+    updateWaktu(); 
+    setInterval(updateWaktu, 1000);
+    
+    if(localStorage.getItem('osis_nama')) cekHalamanTujuan(localStorage.getItem('osis_nama'), localStorage.getItem('osis_jabatan'), localStorage.getItem('osis_kelas'));
+
+    // FETCH AMAN
+    async function fetchData(data) {
+        return fetch(SCRIPT_URL, { 
+            method: 'POST', 
+            redirect: 'follow', 
+            headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+            body: JSON.stringify(data) 
+        }).then(response => response.json());
+    }
+
+    // PHOTO & GPS
+    function bukaFoto(url) { document.getElementById('imgFull').src = "https://i.gifer.com/ZKZg.gif"; document.getElementById('linkDownload').href = url; document.getElementById('modalFoto').style.display = "flex"; let fileId = url.match(/id=(.+?)($|&)/) || url.match(/\/d\/(.+?)(\/|$)/); if (fileId) document.getElementById('imgFull').src = "https://lh3.googleusercontent.com/d/" + fileId[1]; else document.getElementById('imgFull').src = url; }
+    function tutupFoto() { document.getElementById('modalFoto').style.display = "none"; document.getElementById('imgFull').src = ""; }
+    
+    function refreshGPS() {
+        const info = document.getElementById('status-info'); const btn = document.getElementById('btnKirim'); info.innerHTML = '🔄 Mencari ulang...'; info.className = 'status-box status-error'; btn.disabled = true; btn.innerText = 'Menunggu GPS...';
+        if (navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => { updateLokasi(pos); }, () => { info.innerHTML = '⚠️ Gagal GPS'; }, { enableHighAccuracy: true });
+    }
+    function updateLokasi(pos) {
+        userLat = pos.coords.latitude; userLng = pos.coords.longitude;
+        const R=6371e3, φ1=userLat*Math.PI/180, φ2=LAT_SEKOLAH*Math.PI/180, Δφ=(LAT_SEKOLAH-userLat)*Math.PI/180, Δλ=(LNG_SEKOLAH-userLng)*Math.PI/180;
+        const a=Math.sin(Δφ/2)**2+Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+        jarakMeter=Math.floor(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+        const info = document.getElementById('status-info'), btn = document.getElementById('btnKirim');
+        if (jarakMeter <= MAX_JARAK_METER) { info.innerHTML = `✅ Aman: ${jarakMeter}m`; info.className = "status-box status-ok"; btn.disabled = false; btn.innerText = "Kirim Presensi"; btn.classList.remove('btn-secondary'); btn.classList.add('btn-primary'); } 
+        else { info.innerHTML = `❌ Jarak: ${jarakMeter}m`; info.className = "status-box status-error"; btn.disabled = true; btn.innerText = "Jarak Terlalu Jauh"; }
+    }
+    
+    refreshGPS(); 
+    loadKegiatanDropdown(); 
+
+    // ADMIN - LOAD DATA
+    function loadLaporan(mode = '') {
+        const tbody = document.getElementById('tabelLaporan'), divRekap = document.getElementById('rekap-kegiatan'); 
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center p-3">Memuat...</td></tr>'; divRekap.innerHTML = ''; divRekap.className = 'row g-2 mb-3'; 
+        let payload = { action: 'getLaporan' };
+        if (mode === 'filter') { const tgl = document.getElementById('filterTanggalAdmin').value; if (tgl) payload.filterTanggal = tgl; else { Swal.fire('Info', 'Pilih tanggal dulu!', 'info'); return; } }
+        fetchData(payload).then(data => {
+            let html = '', counts = {}; 
+            if (data.data && data.data.length > 0) {
+                data.data.forEach((row, i) => {
+                    let jam = String(row[2]).includes('T') ? new Date(row[2]).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}).replace('.', ':') : row[2];
+                    let keg = row[6]; if (counts[keg]) counts[keg]++; else counts[keg] = 1;
+                    let tgl = new Date(row[1]).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+                    html += `<tr><td>${i+1}</td><td class="small text-muted">${row[10]||'-'}</td><td><b>${tgl}</b><br><small>${jam}</small></td><td>${row[3]}</td><td>${row[4]}</td><td>${row[6]}<br><small class="text-success">${row[7]}</small></td><td class="no-print"><button onclick="bukaFoto('${row[9]}')" class="btn btn-sm btn-primary"><i class="fas fa-camera"></i></button></td></tr>`;
+                });
+                tbody.innerHTML = html;
+                let hRekap = ''; for (const [k, v] of Object.entries(counts)) { let c = ['primary', 'success', 'danger', 'warning'][Math.floor(Math.random() * 4)]; hRekap += `<div class="col-6 col-sm-4 col-md-3"><div class="p-2 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center border-start border-4 border-${c}"><span class="small fw-bold text-secondary text-truncate me-2">${k}</span><span class="badge bg-${c} rounded-pill">${v}</span></div></div>`; } divRekap.innerHTML = hRekap;
+            } else { tbody.innerHTML = '<tr><td colspan="7" class="text-center p-3 text-muted">Kosong.</td></tr>'; }
+        });
+    }
+    
+    // --- LOGIKA EXPORT & CETAK CANGGIH (FITUR BARU) ---
+    function bukaModalExport() {
+        if (!modalExport) modalExport = new bootstrap.Modal(document.getElementById('modalExportOptions'));
+        fetchData({ action: 'getKegiatan' }).then(d => {
+            let html = '<option value="" selected disabled>Pilih Kegiatan...</option>';
+            if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; });
+            document.getElementById('inputExportKegiatan').innerHTML = html;
+        });
+        modalExport.show();
+    }
+    function cekOpsiExport() {
+        let jenis = document.getElementById('jenisFilterExport').value;
+        document.getElementById('opsiExportTanggal').classList.toggle('hidden', jenis !== 'tanggal');
+        document.getElementById('opsiExportKegiatan').classList.toggle('hidden', jenis !== 'kegiatan');
+    }
+    function eksekusiLaporan(tipe) {
+        let jenis = document.getElementById('jenisFilterExport').value;
+        let payload = { action: 'getLaporan', mode: 'semua' };
+        if (jenis === 'tanggal') {
+            let tgl = document.getElementById('inputExportTanggal').value;
+            if (!tgl) return Swal.fire('Error', 'Pilih tanggal!', 'warning');
+            payload = { action: 'getLaporan', filterTanggal: tgl };
+        } else if (jenis === 'kegiatan') {
+            let keg = document.getElementById('inputExportKegiatan').value;
+            if (!keg) return Swal.fire('Error', 'Pilih kegiatan!', 'warning');
+            payload = { action: 'getLaporan', filterKegiatan: keg };
+        }
+        Swal.fire({title:'Memproses...', didOpen:()=>{Swal.showLoading()}});
+        fetchData(payload).then(data => {
+            Swal.close();
+            if (data.result !== 'success' || data.data.length === 0) return Swal.fire('Kosong', 'Tidak ada data.', 'info');
+            if (tipe === 'print') {
+                // RENDER ULANG TABEL UNTUK PRINT
+                const tbody = document.getElementById('tabelLaporan'); let html = '';
+                data.data.forEach((row, i) => {
+                    let jam = String(row[2]).includes('T') ? new Date(row[2]).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.', ':') : row[2];
+                    let tgl = new Date(row[1]).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+                    html += `<tr><td>${i+1}</td><td class="small text-muted">${row[10]||'-'}</td><td><b>${tgl}</b><br><small>${jam}</small></td><td>${row[3]}</td><td>${row[4]}</td><td>${row[6]}<br><small class="text-success">${row[7]}</small></td><td class="no-print"></td></tr>`;
+                });
+                tbody.innerHTML = html;
+                modalExport.hide(); setTimeout(() => { window.print(); loadLaporan(); }, 500);
+            } else {
+                const dataExcel = data.data.map(row => ({ "Username":row[10], "Tanggal":new Date(row[1]).toLocaleDateString('id-ID'), "Jam":row[2], "Nama":row[3], "Kelas":row[4], "Jabatan":row[5], "Kegiatan":row[6], "Keterangan":row[7], "Lokasi":row[8], "Foto":row[9] }));
+                const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx");
+            }
+        });
+    }
+
+    // --- MODAL LOGIC (Hapus & Lainnya) ---
+    function bukaModalHapus() { if (!modalHapus) modalHapus = new bootstrap.Modal(document.getElementById('modalHapusMassal')); fetchData({ action: 'getKegiatan' }).then(d => { let h = '<option value="" selected disabled>Pilih...</option>'; d.data.forEach(r => { h += `<option value="${r[0]}">${r[0]}</option>`; }); document.getElementById('targetHapusKegiatan').innerHTML = h; }); modalHapus.show(); }
+    function cekModeHapus() { let m = document.getElementById('modeHapus').value; document.getElementById('blokHapusTanggal').classList.toggle('hidden', m!=='tanggal'); document.getElementById('blokHapusKegiatan').classList.toggle('hidden', m!=='kegiatan'); }
+    function prosesHapusMassal() { let m = document.getElementById('modeHapus').value; let t = m==='tanggal' ? document.getElementById('targetHapusTanggal').value : document.getElementById('targetHapusKegiatan').value; if(!t) return Swal.fire('Error', 'Pilih target!', 'warning'); Swal.fire({title:'Yakin Hapus?', text:'Permanen!', icon:'warning', showCancelButton:true, confirmButtonText:'Ya, Hapus'}).then((r)=>{ if(r.isConfirmed){ fetchData({ action: 'hapusMassal', mode: m, target: t }).then(d => { if (d.result === 'success') { Swal.fire('Sukses', `Terhapus ${d.jumlah} data.`, 'success'); modalHapus.hide(); loadLaporan(); } else { Swal.fire('Gagal', d.error, 'error'); } }); } }); }
+
+    // --- IMPORT, LOGIN, REGISTER ---
+    function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3],row[4]||'-']); }); if(dataClean.length>0 && confirm(`Import ${dataClean.length} data?`)) fetchData({action:'importAnggota',dataImport:dataClean}).then(d=>{if(d.result==='success'){alert(`Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
+    
+    // --- LOGIN YANG SUDAH DI-HASH ---
+    document.getElementById('loginForm').addEventListener('submit', async e=>{ // <--- TAMBAH ASYNC
+        e.preventDefault(); 
+        document.getElementById('btnLogin').disabled=true; 
+
+        const username = document.getElementById('loginUser').value;
+        const password = document.getElementById('loginPass').value;
+        const hashedPassword = await hashSHA256(password); // <--- HASH PASSWORD
+
+        fetchData({action:'login',username:username,password:hashedPassword}) // <--- KIRIM HASHED PASSWORD
+        .then(d=>{ 
+            if(d.result==='success'){ 
+                localStorage.setItem('osis_nama',d.nama); 
+                localStorage.setItem('osis_jabatan',d.jabatan); 
+                localStorage.setItem('osis_kelas',d.kelas); 
+                localStorage.setItem('osis_username',d.username); 
+                cekHalamanTujuan(d.nama,d.jabatan,d.kelas); 
+            } else alert(d.error); 
+            document.getElementById('btnLogin').disabled=false; 
+        })
+        .catch(() => {
+            alert('Koneksi atau server gagal merespons.');
+            document.getElementById('btnLogin').disabled=false;
         });
-    }
-    
-    // --- LOGIKA EXPORT & CETAK CANGGIH (FITUR BARU) ---
-    function bukaModalExport() {
-        if (!modalExport) modalExport = new bootstrap.Modal(document.getElementById('modalExportOptions'));
-        fetchData({ action: 'getKegiatan' }).then(d => {
-            let html = '<option value="" selected disabled>Pilih Kegiatan...</option>';
-            if(d.result === 'success') d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; });
-            document.getElementById('inputExportKegiatan').innerHTML = html;
-        });
-        modalExport.show();
-    }
-    function cekOpsiExport() {
-        let jenis = document.getElementById('jenisFilterExport').value;
-        document.getElementById('opsiExportTanggal').classList.toggle('hidden', jenis !== 'tanggal');
-        document.getElementById('opsiExportKegiatan').classList.toggle('hidden', jenis !== 'kegiatan');
-    }
-    function eksekusiLaporan(tipe) {
-        let jenis = document.getElementById('jenisFilterExport').value;
-        let payload = { action: 'getLaporan', mode: 'semua' };
-        if (jenis === 'tanggal') {
-            let tgl = document.getElementById('inputExportTanggal').value;
-            if (!tgl) return Swal.fire('Error', 'Pilih tanggal!', 'warning');
-            payload = { action: 'getLaporan', filterTanggal: tgl };
-        } else if (jenis === 'kegiatan') {
-            let keg = document.getElementById('inputExportKegiatan').value;
-            if (!keg) return Swal.fire('Error', 'Pilih kegiatan!', 'warning');
-            payload = { action: 'getLaporan', filterKegiatan: keg };
-        }
-        Swal.fire({title:'Memproses...', didOpen:()=>{Swal.showLoading()}});
-        fetchData(payload).then(data => {
-            Swal.close();
-            if (data.result !== 'success' || data.data.length === 0) return Swal.fire('Kosong', 'Tidak ada data.', 'info');
-            if (tipe === 'print') {
-                // RENDER ULANG TABEL UNTUK PRINT
-                const tbody = document.getElementById('tabelLaporan'); let html = '';
-                data.data.forEach((row, i) => {
-                    let jam = String(row[2]).includes('T') ? new Date(row[2]).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.', ':') : row[2];
-                    let tgl = new Date(row[1]).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
-                    html += `<tr><td>${i+1}</td><td class="small text-muted">${row[10]||'-'}</td><td><b>${tgl}</b><br><small>${jam}</small></td><td>${row[3]}</td><td>${row[4]}</td><td>${row[6]}<br><small class="text-success">${row[7]}</small></td><td class="no-print"></td></tr>`;
-                });
-                tbody.innerHTML = html;
-                modalExport.hide(); setTimeout(() => { window.print(); loadLaporan(); }, 500);
-            } else {
-                const dataExcel = data.data.map(row => ({ "Username":row[10], "Tanggal":new Date(row[1]).toLocaleDateString('id-ID'), "Jam":row[2], "Nama":row[3], "Kelas":row[4], "Jabatan":row[5], "Kegiatan":row[6], "Keterangan":row[7], "Lokasi":row[8], "Foto":row[9] }));
-                const ws = XLSX.utils.json_to_sheet(dataExcel); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Presensi.xlsx");
-            }
-        });
-    }
-
-    // --- MODAL LOGIC (Hapus & Lainnya) ---
-    function bukaModalHapus() { if (!modalHapus) modalHapus = new bootstrap.Modal(document.getElementById('modalHapusMassal')); fetchData({ action: 'getKegiatan' }).then(d => { let h = '<option value="" selected disabled>Pilih...</option>'; d.data.forEach(r => { h += `<option value="${r[0]}">${r[0]}</option>`; }); document.getElementById('targetHapusKegiatan').innerHTML = h; }); modalHapus.show(); }
-    function cekModeHapus() { let m = document.getElementById('modeHapus').value; document.getElementById('blokHapusTanggal').classList.toggle('hidden', m!=='tanggal'); document.getElementById('blokHapusKegiatan').classList.toggle('hidden', m!=='kegiatan'); }
-    function prosesHapusMassal() { let m = document.getElementById('modeHapus').value; let t = m==='tanggal' ? document.getElementById('targetHapusTanggal').value : document.getElementById('targetHapusKegiatan').value; if(!t) return Swal.fire('Error', 'Pilih target!', 'warning'); Swal.fire({title:'Yakin Hapus?', text:'Permanen!', icon:'warning', showCancelButton:true, confirmButtonText:'Ya, Hapus'}).then((r)=>{ if(r.isConfirmed){ fetchData({ action: 'hapusMassal', mode: m, target: t }).then(d => { if (d.result === 'success') { Swal.fire('Sukses', `Terhapus ${d.jumlah} data.`, 'success'); modalHapus.hide(); loadLaporan(); } else { Swal.fire('Gagal', d.error, 'error'); } }); } }); }
-
-    // --- IMPORT, LOGIN, REGISTER ---
-    function prosesImportExcel(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = function(e) { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'}); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let dataClean = []; jsonData.forEach(row => { if(row[0]&&row[1]&&row[2]) dataClean.push([row[0],row[1],row[2],row[3],row[4]||'-']); }); if(dataClean.length>0 && confirm(`Import ${dataClean.length} data?`)) fetchData({action:'importAnggota',dataImport:dataClean}).then(d=>{if(d.result==='success'){alert(`Sukses: ${d.jumlah}`);loadDaftarAnggota();}else alert("Gagal: "+d.error);input.value='';}); }; reader.readAsArrayBuffer(file); }
-    document.getElementById('loginForm').addEventListener('submit', e=>{ e.preventDefault(); document.getElementById('btnLogin').disabled=true; fetchData({action:'login',username:document.getElementById('loginUser').value,password:document.getElementById('loginPass').value}).then(d=>{ if(d.result==='success'){ localStorage.setItem('osis_nama',d.nama); localStorage.setItem('osis_jabatan',d.jabatan); localStorage.setItem('osis_kelas',d.kelas); localStorage.setItem('osis_username',d.username); cekHalamanTujuan(d.nama,d.jabatan,d.kelas); } else alert(d.error); document.getElementById('btnLogin').disabled=false; }); });
-    function cekHalamanTujuan(n, j, k) { document.getElementById('login-page').classList.add('hidden'); if(j==='Pembina'){ document.getElementById('admin-page').classList.remove('hidden'); document.getElementById('tglCetak').innerText=new Date().toLocaleDateString(); loadLaporan(); } else { document.getElementById('presensi-page').classList.remove('hidden'); document.getElementById('displayNama').innerText=n; document.getElementById('displayJabatan').innerText=j; document.getElementById('displayKelas').innerText=k; document.getElementById('nama').value=n; document.getElementById('jabatan').value=j; document.getElementById('kelas').value=k; } }
-    function logout(){ localStorage.clear(); window.location.reload(); }
-    function bukaModalKelolaAnggota(){ if(!modalKelola) modalKelola=new bootstrap.Modal(document.getElementById('modalKelolaAnggota')); modalKelola.show(); loadDaftarAnggota(); }
-    function loadDaftarAnggota(){ document.getElementById('tabelAnggota').innerHTML='<tr><td colspan="3" class="text-center">Memuat...</td></tr>'; fetchData({action:'getAnggota'}).then(d=>{ let h=''; d.data.forEach(r=>{ h+=`<tr><td>${r[2]}<br><small class="text-muted">${r[4]}</small></td><td>${r[3]}</td><td><button onclick="bukaFormAnggota('edit','${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}')" class="btn btn-sm btn-warning">Edit</button> <button onclick="hapusAnggota('${r[0]}')" class="btn btn-sm btn-danger">Hapus</button></td></tr>`; }); document.getElementById('tabelAnggota').innerHTML=h; }); }
-    function bukaFormAnggota(m,u='',p='',n='',j='',k=''){ if(!modalForm) modalForm=new bootstrap.Modal(document.getElementById('modalFormAnggota')); document.getElementById('modeForm').value=m; document.getElementById('judulFormAnggota').innerText=m==='tambah'?'Tambah':'Edit'; document.getElementById('inputUser').value=u; document.getElementById('inputPass').value=p; document.getElementById('inputNama').value=n; document.getElementById('inputJabatan').value=j; document.getElementById('inputKelas').value=k; document.getElementById('usernameLama').value=u; modalForm.show(); }
-    document.getElementById('formAnggota').addEventListener('submit',e=>{ e.preventDefault(); let m=document.getElementById('modeForm').value; let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:document.getElementById('inputPass').value, nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, kelas:document.getElementById('inputKelas').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; fetchData(d).then(x=>{ if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); }); });
-    function hapusAnggota(u){ if(confirm("Hapus?")) fetchData({action:'hapusAnggota',username:u}).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
-    function loadKegiatanDropdown() { 
-        fetchData({ action: 'getKegiatan' }).then(d => { 
-            let html = '<option value="" selected disabled>Pilih...</option>'; 
-            if(d.result === 'success' && d.data.length > 0) {
-                d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; }); 
-            } else {
-                html = '<option value="" disabled>Kegiatan Kosong (Cek Admin)</option>';
-            }
-            document.getElementById('jenisKegiatan').innerHTML = html; 
-        }).catch(e => {
-            document.getElementById('jenisKegiatan').innerHTML = '<option disabled>Gagal Memuat (Cek Koneksi)</option>';
-        }); 
-    }
-    function bukaModalKelolaKegiatan() { if(!modalKegiatan) modalKegiatan = new bootstrap.Modal(document.getElementById('modalKelolaKegiatan')); modalKegiatan.show(); loadListKegiatanAdmin(); }
-    function loadListKegiatanAdmin() { fetchData({ action: 'getKegiatan' }).then(d => { let html = ''; if(d.result === 'success') d.data.forEach(r => { html += `<li class="list-group-item d-flex justify-content-between">${r[0]} <button class="btn btn-sm btn-danger" onclick="hapusKegiatan('${r[0]}')">X</button></li>`; }); document.getElementById('listKegiatan').innerHTML = html; }); }
-    function tambahKegiatan() { let n = document.getElementById('inputKegiatanBaru').value; if(!n) return; fetchData({ action: 'tambahKegiatan', namaKegiatan: n }).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
-    function hapusKegiatan(n) { if(confirm("Hapus?")) fetchData({ action: 'hapusKegiatan', namaKegiatan: n }).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
-
-    // --- SUBMIT ABSEN ---
-    document.getElementById('fotoInput').addEventListener('change', function(e) { let f = e.target.files[0]; if (f) { let r = new FileReader(); r.onload = function(ev) { let i = new Image(); i.onload = function() { let c = document.createElement('canvas'); let x = c.getContext('2d'); let w = i.width, h = i.height, mw = 1000; if (w > mw) { h *= mw / w; w = mw; } c.width = w; c.height = h; x.drawImage(i, 0, 0, w, h); let bh = h * 0.15; if(bh < 60) bh = 60; x.fillStyle = "rgba(0,0,0,0.6)"; x.fillRect(0, h - bh, w, bh); x.fillStyle = "white"; x.font = "bold 14px Arial"; x.fillText(document.getElementById('nama').value, 15, h - bh + 20); x.fillText(new Date().toLocaleString('id-ID'), 15, h - bh + 45); document.getElementById('preview-image').src = c.toDataURL('image/jpeg', 0.8); document.getElementById('preview-container').style.display = 'block'; base64Foto = c.toDataURL('image/jpeg', 0.8).split(',')[1]; }; i.src = ev.target.result; }; r.readAsDataURL(f); } });
-    document.getElementById('presensiForm').addEventListener('submit', e => { e.preventDefault(); if(!base64Foto) return Swal.fire('Error','Foto Wajib!','warning'); document.getElementById('btnKirim').disabled = true; document.getElementById('loading').style.display = 'block';
-        let d = { action: 'absen', tanggal: document.getElementById('tanggal').value, jam: document.getElementById('jam').value, nama: document.getElementById('nama').value, kelas: document.getElementById('kelas').value, jabatan: document.getElementById('jabatan').value, jenisKegiatan: document.getElementById('jenisKegiatan').value, keterangan: document.querySelector('input[name="ket"]:checked').value, lokasi: userLat + ", " + userLng, fotoBase64: base64Foto, fotoMimeType: 'image/jpeg', username: localStorage.getItem('osis_username') };
-        fetchData(d).then(x => { document.getElementById('loading').style.display = 'none'; if (x.result === 'success') { Swal.fire('Berhasil','Data Terkirim','success').then(() => { window.location.reload(); }); } else { Swal.fire('Gagal', x.error, 'error'); } document.getElementById('btnKirim').disabled = false; }).catch(err => { document.getElementById('loading').style.display = 'none'; Swal.fire('Error','Koneksi Gagal','error'); document.getElementById('btnKirim').disabled = false; });
     });
+    // --- AKHIR LOGIN YANG SUDAH DI-HASH ---
+
+    function cekHalamanTujuan(n, j, k) { document.getElementById('login-page').classList.add('hidden'); if(j==='Pembina'){ document.getElementById('admin-page').classList.remove('hidden'); document.getElementById('tglCetak').innerText=new Date().toLocaleDateString(); loadLaporan(); } else { document.getElementById('presensi-page').classList.remove('hidden'); document.getElementById('displayNama').innerText=n; document.getElementById('displayJabatan').innerText=j; document.getElementById('displayKelas').innerText=k; document.getElementById('nama').value=n; document.getElementById('jabatan').value=j; document.getElementById('kelas').value=k; } }
+    function logout(){ localStorage.clear(); window.location.reload(); }
+    function bukaModalKelolaAnggota(){ if(!modalKelola) modalKelola=new bootstrap.Modal(document.getElementById('modalKelolaAnggota')); modalKelola.show(); loadDaftarAnggota(); }
+    function loadDaftarAnggota(){ document.getElementById('tabelAnggota').innerHTML='<tr><td colspan="3" class="text-center">Memuat...</td></tr>'; fetchData({action:'getAnggota'}).then(d=>{ let h=''; d.data.forEach(r=>{ h+=`<tr><td>${r[2]}<br><small class="text-muted">${r[4]}</small></td><td>${r[3]}</td><td><button onclick="bukaFormAnggota('edit','${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}')" class="btn btn-sm btn-warning">Edit</button> <button onclick="hapusAnggota('${r[0]}')" class="btn btn-sm btn-danger">Hapus</button></td></tr>`; }); document.getElementById('tabelAnggota').innerHTML=h; }); }
+    function bukaFormAnggota(m,u='',p='',n='',j='',k=''){ if(!modalForm) modalForm=new bootstrap.Modal(document.getElementById('modalFormAnggota')); document.getElementById('modeForm').value=m; document.getElementById('judulFormAnggota').innerText=m==='tambah'?'Tambah':'Edit'; document.getElementById('inputUser').value=u; document.getElementById('inputPass').value=p; document.getElementById('inputNama').value=n; document.getElementById('inputJabatan').value=j; document.getElementById('inputKelas').value=k; document.getElementById('usernameLama').value=u; modalForm.show(); }
+    
+    // --- SUBMIT FORM ANGGOTA (HASH PASSWORD SEBELUM SIMPAN) ---
+    document.getElementById('formAnggota').addEventListener('submit', async e=>{ // <--- TAMBAH ASYNC
+        e.preventDefault(); 
+        let m=document.getElementById('modeForm').value; 
+        let password = document.getElementById('inputPass').value;
+        const hashedPassword = await hashSHA256(password); // <--- HASH PASSWORD
+
+        let d={action:m==='tambah'?'tambahAnggota':'editAnggota', username:document.getElementById('inputUser').value, password:hashedPassword, // <--- KIRIM HASH
+            nama:document.getElementById('inputNama').value, jabatan:document.getElementById('inputJabatan').value, kelas:document.getElementById('inputKelas').value, usernameLama:document.getElementById('usernameLama').value, usernameBaru:document.getElementById('inputUser').value}; 
+        fetchData(d).then(x=>{ 
+            if(x.result==='success'){ modalForm.hide(); loadDaftarAnggota(); }else alert(x.error); 
+        }); 
+    });
+    // --- AKHIR SUBMIT FORM ANGGOTA ---
+    
+    function hapusAnggota(u){ if(confirm("Hapus?")) fetchData({action:'hapusAnggota',username:u}).then(d=>{if(d.result==='success')loadDaftarAnggota();}); }
+    function loadKegiatanDropdown() { 
+        fetchData({ action: 'getKegiatan' }).then(d => { 
+            let html = '<option value="" selected disabled>Pilih...</option>'; 
+            if(d.result === 'success' && d.data.length > 0) {
+                d.data.forEach(r => { html += `<option value="${r[0]}">${r[0]}</option>`; }); 
+            } else {
+                html = '<option value="" disabled>Kegiatan Kosong (Cek Admin)</option>';
+            }
+            document.getElementById('jenisKegiatan').innerHTML = html; 
+        }).catch(e => {
+            document.getElementById('jenisKegiatan').innerHTML = '<option disabled>Gagal Memuat (Cek Koneksi)</option>';
+        }); 
+    }
+    function bukaModalKelolaKegiatan() { if(!modalKegiatan) modalKegiatan = new bootstrap.Modal(document.getElementById('modalKelolaKegiatan')); modalKegiatan.show(); loadListKegiatanAdmin(); }
+    function loadListKegiatanAdmin() { fetchData({ action: 'getKegiatan' }).then(d => { let html = ''; if(d.result === 'success') d.data.forEach(r => { html += `<li class="list-group-item d-flex justify-content-between">${r[0]} <button class="btn btn-sm btn-danger" onclick="hapusKegiatan('${r[0]}')">X</button></li>`; }); document.getElementById('listKegiatan').innerHTML = html; }); }
+    function tambahKegiatan() { let n = document.getElementById('inputKegiatanBaru').value; if(!n) return; fetchData({ action: 'tambahKegiatan', namaKegiatan: n }).then(d => { if(d.result==='success') { document.getElementById('inputKegiatanBaru').value=''; loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
+    function hapusKegiatan(n) { if(confirm("Hapus?")) fetchData({ action: 'hapusKegiatan', namaKegiatan: n }).then(d => { if(d.result==='success') { loadListKegiatanAdmin(); loadKegiatanDropdown(); } }); }
+
+    // --- SUBMIT ABSEN ---
+    document.getElementById('fotoInput').addEventListener('change', function(e) { let f = e.target.files[0]; if (f) { let r = new FileReader(); r.onload = function(ev) { let i = new Image(); i.onload = function() { let c = document.createElement('canvas'); let x = c.getContext('2d'); let w = i.width, h = i.height, mw = 1000; if (w > mw) { h *= mw / w; w = mw; } c.width = w; c.height = h; x.drawImage(i, 0, 0, w, h); let bh = h * 0.15; if(bh < 60) bh = 60; x.fillStyle = "rgba(0,0,0,0.6)"; x.fillRect(0, h - bh, w, bh); x.fillStyle = "white"; x.font = "bold 14px Arial"; x.fillText(document.getElementById('nama').value, 15, h - bh + 20); x.fillText(new Date().toLocaleString('id-ID'), 15, h - bh + 45); document.getElementById('preview-image').src = c.toDataURL('image/jpeg', 0.8); document.getElementById('preview-container').style.display = 'block'; base64Foto = c.toDataURL('image/jpeg', 0.8).split(',')[1]; }; i.src = ev.target.result; }; r.readAsDataURL(f); } });
+    document.getElementById('presensiForm').addEventListener('submit', e => { e.preventDefault(); if(!base64Foto) return Swal.fire('Error','Foto Wajib!','warning'); document.getElementById('btnKirim').disabled = true; document.getElementById('loading').style.display = 'block';
+        let d = { action: 'absen', tanggal: document.getElementById('tanggal').value, jam: document.getElementById('jam').value, nama: document.getElementById('nama').value, kelas: document.getElementById('kelas').value, jabatan: document.getElementById('jabatan').value, jenisKegiatan: document.getElementById('jenisKegiatan').value, keterangan: document.querySelector('input[name="ket"]:checked').value, lokasi: userLat + ", " + userLng, fotoBase64: base64Foto, fotoMimeType: 'image/jpeg', username: localStorage.getItem('osis_username') };
+        fetchData(d).then(x => { document.getElementById('loading').style.display = 'none'; if (x.result === 'success') { Swal.fire('Berhasil','Data Terkirim','success').then(() => { window.location.reload(); }); } else { Swal.fire('Gagal', x.error, 'error'); } document.getElementById('btnKirim').disabled = false; }).catch(err => { document.getElementById('loading').style.display = 'none'; Swal.fire('Error','Koneksi Gagal','error'); document.getElementById('btnKirim').disabled = false; });
+    });
 </script>
-</body>
-</html>
